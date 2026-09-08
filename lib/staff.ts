@@ -26,6 +26,8 @@ export async function addStaff(input: StaffInput): Promise<Staff> {
       department: input.department.trim() || null,
       outlet: input.outlet.trim() || null,
       status: input.status,
+      salary: input.salary ? Number(input.salary) : null,
+      hire_date: input.hire_date || new Date().toISOString().slice(0, 10),
       created_by: userData.user?.id ?? null,
     })
     .select()
@@ -51,6 +53,8 @@ export async function updateStaff(
       department: input.department.trim() || null,
       outlet: input.outlet.trim() || null,
       status: input.status,
+      salary: input.salary ? Number(input.salary) : null,
+      hire_date: input.hire_date || undefined,
     })
     .eq('id', id)
     .select()

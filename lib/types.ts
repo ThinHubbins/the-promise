@@ -36,32 +36,8 @@ export interface Feedback {
 
 export type StaffStatus = 'active' | 'inactive';
 
-export interface Staff {
-  id: string;
-  full_name: string;
-  email: string;
-  phone: string | null;
-  staff_id: string;
-  job_title: string | null;
-  department: string | null;
-  outlet: string | null;
-  status: StaffStatus;
-  created_by: string | null;
-  created_at: string; // ISO string
-  updated_at: string; // ISO string
-}
-
 // Fields the admin fills in when adding/editing a staff member
-export type StaffInput = {
-  full_name: string;
-  email: string;
-  phone: string;
-  staff_id: string;
-  job_title: string;
-  department: string;
-  outlet: string;
-  status: StaffStatus;
-};
+
 
 interface OrderItem {
   name: string;
@@ -131,3 +107,102 @@ export type AttendanceRecord = {
 };
 
 export type OpenAttendanceWithStaff = AttendanceRecord & { staff: Staff };
+
+
+export interface Staff {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  staff_id: string;
+  job_title: string | null;
+  department: string | null;
+  outlet: string | null;
+  status: StaffStatus;
+  salary: number | null;
+  hire_date: string; // ISO date, e.g. "2025-01-15"
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type StaffInput = {
+  full_name: string;
+  email: string;
+  phone: string;
+  staff_id: string;
+  job_title: string;
+  department: string;
+  outlet: string;
+  status: StaffStatus;
+  salary: string;      // raw form input, parsed to number on submit
+  hire_date: string;
+};
+export type PayrollStatus = 'in_progress' | 'almost_due' | 'ready';
+
+export interface PayrollPayment {
+  id: string;
+  staff_id: string;
+  period_start: string;
+  period_end: string;
+  amount: number;
+  paid_at: string;
+  paid_by: string | null;
+  created_at: string;
+}
+
+export interface StaffPayrollInfo {
+  staff: Staff;
+  cycleStart: string;
+  daysIntoCycle: number;
+  status: PayrollStatus;
+  nextDueDate: string;
+  lastPayment: PayrollPayment | null;
+}
+
+export type LeaveType =
+  | 'annual'
+  | 'sick'
+  | 'casual'
+  | 'maternity_paternity'
+  | 'emergency'
+  | 'other';
+
+export type LeaveStatus = 'pending' | 'approved' | 'rejected';
+
+export interface LeaveRequest {
+  id: string;
+  staff_id: string;
+  staff_name: string;
+  staff_code: string;   // staff.staff_id (business ID, e.g. EMP-001)
+  staff_email: string;
+  department: string | null;
+  outlet: string | null;
+  leave_type: LeaveType;
+  start_date: string; // ISO date
+  end_date: string;   // ISO date
+  days: number;
+  reason: string;
+  document_url: string | null;
+  status: LeaveStatus;
+  submitted_at: string;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+}
+
+export type LeaveRequestInput = {
+  leave_type: LeaveType;
+  start_date: string;
+  end_date: string;
+  reason: string;
+  document?: File | null;
+};
+
+export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
+  annual: 'Annual Leave',
+  sick: 'Sick Leave',
+  casual: 'Casual Leave',
+  maternity_paternity: 'Maternity/Paternity Leave',
+  emergency: 'Emergency Leave',
+  other: 'Other',
+};

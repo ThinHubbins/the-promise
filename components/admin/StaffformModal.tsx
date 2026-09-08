@@ -16,6 +16,8 @@ const EMPTY_FORM: StaffInput = {
   department: "",
   outlet: "",
   status: "active",
+  salary: "",
+  hire_date: "",
 };
 
 export default function StaffFormModal({
@@ -35,24 +37,26 @@ export default function StaffFormModal({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (staff) {
-      setForm({
-        full_name: staff.full_name,
-        email: staff.email,
-        phone: staff.phone ?? "",
-        staff_id: staff.staff_id,
-        job_title: staff.job_title ?? "",
-        department: staff.department ?? "",
-        outlet: staff.outlet ?? "",
-        status: staff.status,
-      });
-    } else {
-      setForm(EMPTY_FORM);
-    }
+  if (staff) {
+    setForm({
+      full_name: staff.full_name,
+      email: staff.email,
+      phone: staff.phone ?? "",
+      staff_id: staff.staff_id,
+      job_title: staff.job_title ?? "",
+      department: staff.department ?? "",
+      outlet: staff.outlet ?? "",
+      status: staff.status,
+      salary: staff.salary != null ? String(staff.salary) : "",
+      hire_date: staff.hire_date ?? "",
+    });
+  } else {
+    setForm(EMPTY_FORM);
+  }
 
-    setCurrentMode(mode);
-    setError(null);
-  }, [staff, mode]);
+  setCurrentMode(mode);
+  setError(null);
+}, [staff, mode]);
 
   function update<K extends keyof StaffInput>(
     key: K,
@@ -191,6 +195,27 @@ export default function StaffFormModal({
                 onChange={(e) => update("job_title", e.target.value)}
               />
             </div>
+
+            <div className="field">
+  <label>Salary</label>
+  <input
+    type="number"
+    value={form.salary}
+    disabled={isView}
+    onChange={(e) => update("salary", e.target.value)}
+    placeholder="e.g. 150000"
+  />
+</div>
+
+<div className="field">
+  <label>Hire Date</label>
+  <input
+    type="date"
+    value={form.hire_date}
+    disabled={isView}
+    onChange={(e) => update("hire_date", e.target.value)}
+  />
+</div>
 
             <div className="field">
               <label>Department</label>

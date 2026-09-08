@@ -1,0 +1,406 @@
+
+.loadingWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+.shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: #14213d;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1rem;
+}
+
+.brand {
+  margin-bottom: 2rem;
+}
+
+.brandTag {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.brandTitle {
+  margin: 0.25rem 0 0;
+  font-size: 1.25rem;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.navItem {
+  text-align: left;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.navItem:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.navItemActive {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-weight: 600;
+}
+
+.logoutBtn {
+  margin-top: auto;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+
+.logoutBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.content {
+  flex: 1;
+  padding: 2rem;
+}
+
+.contentHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.hrEmail {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+.filterRow {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.filterInput,
+.filterSelect {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.filterInput {
+  flex: 1;
+  min-width: 180px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #eee;
+}
+
+.table th {
+  color: #666;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.errorText {
+  color: #b91c1c;
+}
+
+.badgeNeutral,
+.badgeWarning,
+.badgeReady {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.badgeNeutral {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.badgeWarning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badgeReady {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.payBtn {
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  border: none;
+  background: #14213d;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.payBtn:disabled {
+  background: #d1d5db;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+.page {
+  min-height: 100vh;
+  background: #F6F4EF;
+  color: #1A1D22;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+@media (max-width: 900px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Sidebar ---------- */
+.sidebar {
+  background: #12151A;
+  color: #C7CCD1;
+  padding: 1.75rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    overflow-x: auto;
+    padding: 1rem;
+    gap: 1.5rem;
+  }
+}
+
+.brand {
+  margin-bottom: 2.5rem;
+}
+
+@media (max-width: 900px) {
+  .brand {
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+}
+
+.brandTag {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: #7B8290;
+  margin-bottom: 0.2rem;
+}
+
+.brandTitle {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+  color: #F6F4EF;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+}
+
+@media (max-width: 900px) {
+  .nav {
+    flex-direction: row;
+    flex: none;
+  }
+}
+
+.navItem {
+  text-align: left;
+  background: none;
+  border: none;
+  color: #9AA0AA;
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  border-left: 2px solid transparent;
+}
+
+.navItem:hover {
+  background: #1B1F26;
+  color: #E7EAEE;
+}
+
+.navItemActive {
+  background: #1B1F26;
+  color: #F6F4EF;
+  border-left-color: #E7B65C;
+}
+
+@media (max-width: 900px) {
+  .navItem { border-left: none; border-bottom: 2px solid transparent; }
+  .navItemActive { border-bottom-color: #E7B65C; }
+}
+
+.logoutBtn {
+  margin-top: 1.5rem;
+  background: none;
+  border: 1px solid #2A2F38;
+  color: #9AA0AA;
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.logoutBtn:hover {
+  border-color: #E7B65C;
+  color: #E7B65C;
+}
+
+@media (max-width: 900px) {
+  .logoutBtn { margin-top: 0; flex-shrink: 0; }
+}
+
+/* ---------- Content ---------- */
+.content {
+  padding: 2rem 2.5rem 3rem;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .content { padding: 1.5rem 1.25rem 2.5rem; }
+}
+
+.contentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid #E2DFD5;
+  flex-wrap: wrap;
+}
+
+.contentHeader h1 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.hrEmail {
+  font-size: 0.85rem;
+  color: #6B7280;
+}
+
+.panel {
+  min-width: 0;
+}
+
+/* ---------- Overview KPIs ---------- */
+.kpiRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: #E2DFD5;
+  border: 1px solid #E2DFD5;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 640px) {
+  .kpiRow { grid-template-columns: 1fr; }
+}
+
+.kpiCell {
+  background: #FBFAF7;
+  padding: 1.25rem 1.5rem;
+}
+
+.kpiValue {
+  font-size: 1.9rem;
+  font-weight: 600;
+  line-height: 1;
+  margin-bottom: 0.35rem;
+}
+
+.kpiLabel {
+  font-size: 0.82rem;
+  color: #6B7280;
+}
+
+.overviewNote {
+  color: #6B7280;
+  font-size: 0.92rem;
+}
+
+.loadingWrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6B7280;
+}

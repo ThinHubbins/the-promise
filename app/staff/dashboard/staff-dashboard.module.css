@@ -1,0 +1,341 @@
+.page {
+  min-height: 100vh;
+  background: #F3F1EA;
+  color: #1C2B22;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+/* ---------- Header ---------- */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #DAD6C8;
+  flex-wrap: wrap;
+}
+
+.tag {
+  display: block;
+  font-size: 0.8rem;
+  color: #B8892B;
+  margin-bottom: 0.35rem;
+  letter-spacing: 0.02em;
+}
+
+.headerTitle {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.9rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+  color: #16221B;
+}
+
+.headerSub {
+  margin: 0;
+  color: #5B6459;
+  font-size: 0.95rem;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* ---------- Layout ---------- */
+.grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Profile card (left) ---------- */
+.profile {
+  position: sticky;
+  top: 1.5rem;
+  border: 1px solid #DAD6C8;
+  border-radius: 10px;
+  padding: 1.5rem;
+  background: #FBFAF6;
+}
+
+@media (max-width: 900px) {
+  .profile {
+    position: static;
+  }
+}
+
+.profileName {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.25rem;
+  margin: 0 0 0.15rem;
+}
+
+.profileMeta {
+  color: #5B6459;
+  font-size: 0.85rem;
+  margin: 0 0 1.25rem;
+}
+
+.profileRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+  border-top: 1px solid #EAE7DB;
+  font-size: 0.9rem;
+}
+
+.profileRow:first-of-type {
+  border-top: none;
+}
+
+.profileLabel {
+  color: #5B6459;
+}
+
+.profileValue {
+  font-weight: 500;
+  text-align: right;
+}
+
+.salaryValue {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.05rem;
+  color: #16221B;
+}
+
+.clockRow {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #EAE7DB;
+}
+
+/* ---------- Status badges ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.25rem 0.65rem;
+  border-radius: 100px;
+}
+
+.badgeActive { background: #E4EFE8; color: #2F7D5B; }
+.badgeInactive { background: #EFEAE0; color: #8A8272; }
+.badgeRejected { background: #F3E2DC; color: #A63B2B; }
+.badgePending { background: #F6EAD0; color: #97701F; }
+
+.sinceNote {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: #5B6459;
+}
+
+/* ---------- Right column sections ---------- */
+.section {
+  margin-bottom: 2rem;
+}
+
+.sectionHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.sectionTitle {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.emptyNote {
+  color: #5B6459;
+  font-size: 0.9rem;
+  padding: 1rem 0;
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.55rem 1rem;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btnPrimary {
+  background: #16221B;
+  color: #FBFAF6;
+}
+.btnPrimary:hover:not(:disabled) { opacity: 0.85; }
+
+.btnOutline {
+  background: transparent;
+  border-color: #DAD6C8;
+  color: #1C2B22;
+}
+.btnOutline:hover:not(:disabled) { background: #EFEAE0; }
+
+.btnSmall { padding: 0.4rem 0.75rem; font-size: 0.8rem; }
+
+/* ---------- Tables (desktop) ---------- */
+.tableWrap {
+  border: 1px solid #DAD6C8;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  background: #EFEAE0;
+  color: #5B6459;
+  font-weight: 500;
+  font-size: 0.8rem;
+}
+
+.table td {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #EAE7DB;
+}
+
+.table tbody tr:hover { background: #FBFAF6; }
+
+/* Collapse tables into cards on small screens */
+@media (max-width: 640px) {
+  .tableWrap { border: none; }
+  .table thead { display: none; }
+  .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
+  .table tr {
+    border: 1px solid #DAD6C8;
+    border-radius: 10px;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.9rem;
+    background: #FBFAF6;
+  }
+  .table td {
+    border-top: none;
+    padding: 0.4rem 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.85rem;
+  }
+  .table td::before {
+    content: attr(data-label);
+    color: #5B6459;
+    font-size: 0.78rem;
+  }
+}
+
+/* ---------- Leave form ---------- */
+.form {
+  border: 1px solid #DAD6C8;
+  border-radius: 10px;
+  padding: 1.5rem;
+  background: #FBFAF6;
+  margin-bottom: 1.5rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 560px) {
+  .formGrid { grid-template-columns: 1fr; }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.field label {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #3C4A3F;
+}
+
+.field input,
+.field select,
+.field textarea {
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #DAD6C8;
+  border-radius: 7px;
+  background: #FFFFFF;
+  color: #1C2B22;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: 2px solid #B8892B;
+  outline-offset: 1px;
+}
+
+.field input:disabled {
+  background: #EFEAE0;
+  color: #5B6459;
+}
+
+.field textarea { resize: vertical; }
+
+.formActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.errorText {
+  color: #A63B2B;
+  font-size: 0.88rem;
+  margin: 0 0 1rem;
+}
+
+.loadingWrap {
+  max-width: 480px;
+  margin: 4rem auto;
+  text-align: center;
+  color: #5B6459;
+}

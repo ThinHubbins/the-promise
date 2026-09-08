@@ -1,0 +1,162 @@
+.wrap {
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.toolbar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.filterBtn {
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  border: 1px solid #E2DFD5;
+  background: #FBFAF7;
+  color: #6B7280;
+  cursor: pointer;
+}
+
+.filterBtn:hover {
+  border-color: #E7B65C;
+  color: #1A1D22;
+}
+
+.filterBtnActive {
+  background: #12151A;
+  border-color: #12151A;
+  color: #F6F4EF;
+}
+
+.emptyNote {
+  color: #6B7280;
+  font-size: 0.92rem;
+  padding: 1.5rem 0;
+}
+
+.tableWrap {
+  border: 1px solid #E2DFD5;
+  border-radius: 8px;
+  overflow: hidden;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.87rem;
+  min-width: 760px;
+}
+
+.table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  background: #FBFAF7;
+  color: #6B7280;
+  font-weight: 500;
+  font-size: 0.78rem;
+  border-bottom: 1px solid #E2DFD5;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #EFEDE5;
+  vertical-align: top;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: #FBFAF7;
+}
+
+.reasonCell {
+  max-width: 220px;
+  color: #4B5157;
+}
+
+.badge {
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 0.2rem 0.6rem;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
+.badgePending { background: #F6EAD0; color: #97701F; }
+.badgeApproved { background: #E4EFE8; color: #2E7D53; }
+.badgeRejected { background: #F3E2DC; color: #C1442E; }
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn {
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.approveBtn {
+  background: #2E7D53;
+  color: #fff;
+}
+.approveBtn:hover { opacity: 0.88; }
+
+.rejectBtn {
+  background: transparent;
+  border-color: #E2DFD5;
+  color: #C1442E;
+}
+.rejectBtn:hover { background: #F3E2DC; }
+
+.viewBtn {
+  background: transparent;
+  border-color: #E2DFD5;
+  color: #1A1D22;
+}
+.viewBtn:hover { background: #FBFAF7; }
+
+/* Card layout on small screens */
+@media (max-width: 720px) {
+  .tableWrap { border: none; overflow: visible; }
+  .table { min-width: 0; }
+  .table thead { display: none; }
+  .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
+  .table tr {
+    border: 1px solid #E2DFD5;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.9rem;
+    background: #FBFAF7;
+  }
+  .table td {
+    border-bottom: none;
+    padding: 0.4rem 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    text-align: right;
+  }
+  .table td::before {
+    content: attr(data-label);
+    color: #6B7280;
+    font-size: 0.78rem;
+    text-align: left;
+  }
+  .reasonCell { max-width: none; text-align: right; }
+  .actions { justify-content: flex-end; }
+}

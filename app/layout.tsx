@@ -6,6 +6,7 @@ import { CartProvider } from '../context/CartContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import Toast from '../components/Toast';
+import { Fraunces, Inter } from 'next/font/google';
 
 export const metadata: Metadata = {
   title: 'The Promise — Nigerian Fast Food & Catering, Since 2002',

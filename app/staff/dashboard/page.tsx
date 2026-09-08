@@ -8,8 +8,22 @@ import {
   staffSignOut,
 } from "../../../lib/staffAuth";
 import { fetchAttendanceForStaff, subscribeToAttendance } from "../../../lib/attendance";
-import type { Staff, AttendanceRecord } from "../../../lib/types";
+import {
+  submitLeaveRequest,
+  fetchLeaveRequestsForStaff,
+  calculateLeaveDays,
+  getLeaveDocumentUrl,
+} from "../../../lib/leave";
+import type {
+  Staff,
+  AttendanceRecord,
+  LeaveRequest,
+  LeaveRequestInput,
+  LeaveType,
+} from "../../../lib/types";
+import { LEAVE_TYPE_LABELS } from "../../../lib/types";
 import Link from "next/link";
+import styles from "./staff-dashboard.module.css";
 
 function formatDuration(clockIn: string, clockOut: string | null) {
   const start = new Date(clockIn).getTime();
@@ -20,15 +34,41 @@ function formatDuration(clockIn: string, clockOut: string | null) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
+function formatNaira(n: number | null): string {
+  if (n == null) return "—";
+  return "\u20A6" + n.toLocaleString("en-NG");
+}
+
+function badgeClass(status: string) {
+  if (status === "active" || status === "approved") return `${styles.badge} ${styles.badgeActive}`;
+  if (status === "rejected") return `${styles.badge} ${styles.badgeRejected}`;
+  if (status === "pending") return `${styles.badge} ${styles.badgePending}`;
+  return `${styles.badge} ${styles.badgeInactive}`;
+}
+
+const EMPTY_LEAVE_FORM: LeaveRequestInput = {
+  leave_type: "annual",
+  start_date: "",
+  end_date: "",
+  reason: "",
+  document: null,
+};
+
 export default function StaffDashboardPage() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
   const [staff, setStaff] = useState<Staff | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // --- Attendance state ---
   const [history, setHistory] = useState<AttendanceRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [leaveLoading, setLeaveLoading] = useState(true);
+  const [showLeaveForm, setShowLeaveForm] = useState(false);
+  const [leaveForm, setLeaveForm] = useState<LeaveRequestInput>(EMPTY_LEAVE_FORM);
+  const [leaveSaving, setLeaveSaving] = useState(false);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -65,19 +105,28 @@ export default function StaffDashboardPage() {
     }
   }, []);
 
-  // Initial history load once we know who the staff member is
-  useEffect(() => {
-    if (staff) loadHistory(staff.id);
-  }, [staff, loadHistory]);
+  const loadLeaveRequests = useCallback(async (staffId: string) => {
+    setLeaveLoading(true);
+    try {
+      setLeaveRequests(await fetchLeaveRequestsForStaff(staffId));
+    } catch (err) {
+      console.error("Failed to load leave requests", err);
+    } finally {
+      setLeaveLoading(false);
+    }
+  }, []);
 
-  // Live sync: refetch this staff member's history the instant their attendance row changes
-  // (e.g. right after they scan the QR on /staff/scan-attendance).
+  useEffect(() => {
+    if (staff) {
+      loadHistory(staff.id);
+      loadLeaveRequests(staff.id);
+    }
+  }, [staff, loadHistory, loadLeaveRequests]);
+
   useEffect(() => {
     if (!staff) return;
     const unsubscribe = subscribeToAttendance((changedStaffId) => {
-      if (changedStaffId === staff.id) {
-        loadHistory(staff.id);
-      }
+      if (changedStaffId === staff.id) loadHistory(staff.id);
     });
     return unsubscribe;
   }, [staff, loadHistory]);
@@ -87,10 +136,55 @@ export default function StaffDashboardPage() {
     router.replace("/staff/login");
   }
 
+  function updateLeaveField<K extends keyof LeaveRequestInput>(
+    key: K,
+    value: LeaveRequestInput[K],
+  ) {
+    setLeaveForm((f) => ({ ...f, [key]: value }));
+  }
+
+  async function handleLeaveSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!staff) return;
+
+    setLeaveError(null);
+
+    if (!leaveForm.start_date || !leaveForm.end_date) {
+      setLeaveError("Start date and end date are required.");
+      return;
+    }
+    if (new Date(leaveForm.end_date) < new Date(leaveForm.start_date)) {
+      setLeaveError("End date cannot be before start date.");
+      return;
+    }
+    if (!leaveForm.reason.trim()) {
+      setLeaveError("Please provide a reason for your leave.");
+      return;
+    }
+
+    setLeaveSaving(true);
+    try {
+      const saved = await submitLeaveRequest(staff, leaveForm);
+      setLeaveRequests((prev) => [saved, ...prev]);
+      setLeaveForm(EMPTY_LEAVE_FORM);
+      setShowLeaveForm(false);
+    } catch (err) {
+      console.error("Failed to submit leave request", err);
+      setLeaveError("Could not submit leave request. Please try again.");
+    } finally {
+      setLeaveSaving(false);
+    }
+  }
+
+  async function handleViewDocument(path: string) {
+    const url = await getLeaveDocumentUrl(path);
+    if (url) window.open(url, "_blank");
+  }
+
   if (checking) {
     return (
-      <main>
-        <div className="wrap admin-loading-wrap">
+      <main className={styles.page}>
+        <div className={styles.loadingWrap}>
           <p>Checking access…</p>
         </div>
       </main>
@@ -99,8 +193,8 @@ export default function StaffDashboardPage() {
 
   if (error || !staff) {
     return (
-      <main>
-        <div className="wrap admin-loading-wrap">
+      <main className={styles.page}>
+        <div className={styles.loadingWrap}>
           <p>{error ?? "No staff record found."}</p>
         </div>
       </main>
@@ -109,125 +203,251 @@ export default function StaffDashboardPage() {
 
   const openSession = history.find((r) => r.clock_out === null) ?? null;
   const isClockedIn = !!openSession;
+  const previewDays = calculateLeaveDays(leaveForm.start_date, leaveForm.end_date);
 
   return (
-    <main>
-      <div className="wrap admin-wrap">
-        <div className="admin-header">
+    <main className={styles.page}>
+      <div className={styles.shell}>
+        <div className={styles.header}>
           <div>
-            <span className="section-tag">The Promise Staff</span>
-            <h2>Welcome, {staff.full_name}</h2>
-            <p>Your staff details.</p>
+            <span className={styles.tag}>The Promise Staff</span>
+            <h1 className={styles.headerTitle}>Welcome, {staff.full_name}</h1>
+            <p className={styles.headerSub}>Your staff details, attendance and leave.</p>
           </div>
-          <div className="admin-header-actions">
-            <Link
-              href="/staff/scan-attendance"
-              className="btn btn-primary btn-sm"
-            >
-              Scan Attendance QR
+          <div className={styles.headerActions}>
+            <Link href="/staff/scan-attendance" className={`${styles.btn} ${styles.btnPrimary}`}>
+              Scan attendance QR
             </Link>
-          </div>
-          <div className="admin-header-actions">
-            <button className="btn btn-outline btn-sm" onClick={handleSignOut}>
+            <button className={`${styles.btn} ${styles.btnOutline}`} onClick={handleSignOut}>
               Sign out
             </button>
           </div>
         </div>
 
-        <div className="admin-card">
-          <div className="admin-table-wrap">
-            <table className="admin-table">
-              <tbody>
-                <tr>
-                  <th>Full name</th>
-                  <td>{staff.full_name}</td>
-                </tr>
-                <tr>
-                  <th>Staff ID</th>
-                  <td>{staff.staff_id}</td>
-                </tr>
-                <tr>
-                  <th>Email</th>
-                  <td>{staff.email}</td>
-                </tr>
-                <tr>
-                  <th>Phone</th>
-                  <td>{staff.phone || "—"}</td>
-                </tr>
-                <tr>
-                  <th>Job title</th>
-                  <td>{staff.job_title || "—"}</td>
-                </tr>
-                <tr>
-                  <th>Department</th>
-                  <td>{staff.department || "—"}</td>
-                </tr>
-                <tr>
-                  <th>Outlet</th>
-                  <td>{staff.outlet || "—"}</td>
-                </tr>
-                <tr>
-                  <th>Status</th>
-                  <td>
-                    <span
-                      className={`status-badge ${staff.status === "active" ? "status-active" : "status-inactive"}`}
-                    >
-                      {staff.status}
-                    </span>
-                  </td>
-                </tr>
-                <tr>
-                  <th>Attendance</th>
-                  <td>
-                    <span
-                      className={`status-badge ${isClockedIn ? "status-active" : "status-inactive"}`}
-                    >
-                      {isClockedIn ? "Clocked In" : "Clocked Out"}
-                    </span>
-                    {isClockedIn && openSession && (
-                      <span style={{ marginLeft: "0.75rem", opacity: 0.75 }}>
-                        since {new Date(openSession.clock_in).toLocaleTimeString()}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <div className={styles.grid}>
+          {/* ---------- Left: profile summary ---------- */}
+          <aside className={styles.profile}>
+            <h2 className={styles.profileName}>{staff.full_name}</h2>
+            <p className={styles.profileMeta}>{staff.job_title || "Staff member"} · {staff.staff_id}</p>
 
-        <div className="admin-card">
-          <h3>Attendance History</h3>
-          {historyLoading && <p>Loading history…</p>}
-          {!historyLoading && history.length === 0 && (
-            <p>No attendance records yet.</p>
-          )}
-          {!historyLoading && history.length > 0 && (
-            <div className="admin-table-wrap">
-              <table className="attendance-history-table">
-                <thead>
-                  <tr>
-                    <th>Clock In</th>
-                    <th>Clock Out</th>
-                    <th>Duration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.map((rec) => (
-                    <tr key={rec.id}>
-                      <td>{new Date(rec.clock_in).toLocaleString()}</td>
-                      <td>
-                        {rec.clock_out
-                          ? new Date(rec.clock_out).toLocaleString()
-                          : "— still clocked in —"}
-                      </td>
-                      <td>{formatDuration(rec.clock_in, rec.clock_out)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className={styles.profileRow}>
+              <span className={styles.profileLabel}>Email</span>
+              <span className={styles.profileValue}>{staff.email}</span>
             </div>
-          )}
+            <div className={styles.profileRow}>
+              <span className={styles.profileLabel}>Phone</span>
+              <span className={styles.profileValue}>{staff.phone || "—"}</span>
+            </div>
+            <div className={styles.profileRow}>
+              <span className={styles.profileLabel}>Department</span>
+              <span className={styles.profileValue}>{staff.department || "—"}</span>
+            </div>
+            <div className={styles.profileRow}>
+              <span className={styles.profileLabel}>Outlet</span>
+              <span className={styles.profileValue}>{staff.outlet || "—"}</span>
+            </div>
+            <div className={styles.profileRow}>
+              <span className={styles.profileLabel}>Hire date</span>
+              <span className={styles.profileValue}>{staff.hire_date || "—"}</span>
+            </div>
+            <div className={styles.profileRow}>
+              <span className={styles.profileLabel}>Salary</span>
+              <span className={`${styles.profileValue} ${styles.salaryValue}`}>
+                {formatNaira(staff.salary)}
+              </span>
+            </div>
+            <div className={styles.profileRow}>
+              <span className={styles.profileLabel}>Status</span>
+              <span className={badgeClass(staff.status)}>{staff.status}</span>
+            </div>
+
+            <div className={styles.clockRow}>
+              <span className={badgeClass(isClockedIn ? "active" : "inactive")}>
+                {isClockedIn ? "Clocked in" : "Clocked out"}
+              </span>
+              {isClockedIn && openSession && (
+                <span className={styles.sinceNote}>
+                  Since {new Date(openSession.clock_in).toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+          </aside>
+
+          {/* ---------- Right: attendance + leave ---------- */}
+          <div>
+            <section className={styles.section}>
+              <div className={styles.sectionHead}>
+                <h2 className={styles.sectionTitle}>Attendance history</h2>
+              </div>
+
+              {historyLoading && <p className={styles.emptyNote}>Loading history…</p>}
+              {!historyLoading && history.length === 0 && (
+                <p className={styles.emptyNote}>No attendance records yet.</p>
+              )}
+              {!historyLoading && history.length > 0 && (
+                <div className={styles.tableWrap}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Clock in</th>
+                        <th>Clock out</th>
+                        <th>Duration</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {history.map((rec) => (
+                        <tr key={rec.id}>
+                          <td data-label="Clock in">{new Date(rec.clock_in).toLocaleString()}</td>
+                          <td data-label="Clock out">
+                            {rec.clock_out ? new Date(rec.clock_out).toLocaleString() : "Still clocked in"}
+                          </td>
+                          <td data-label="Duration">{formatDuration(rec.clock_in, rec.clock_out)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+
+            <section className={styles.section}>
+              <div className={styles.sectionHead}>
+                <h2 className={styles.sectionTitle}>Leave requests</h2>
+                {!showLeaveForm && (
+                  <button
+                    className={`${styles.btn} ${styles.btnPrimary} ${styles.btnSmall}`}
+                    onClick={() => setShowLeaveForm(true)}
+                  >
+                    Request leave
+                  </button>
+                )}
+              </div>
+
+              {showLeaveForm && (
+                <form onSubmit={handleLeaveSubmit} className={styles.form}>
+                  {leaveError && <p className={styles.errorText}>{leaveError}</p>}
+
+                  <div className={styles.field}>
+                    <label>Leave type</label>
+                    <select
+                      value={leaveForm.leave_type}
+                      onChange={(e) => updateLeaveField("leave_type", e.target.value as LeaveType)}
+                    >
+                      {Object.entries(LEAVE_TYPE_LABELS).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className={styles.formGrid}>
+                    <div className={styles.field}>
+                      <label>Start date</label>
+                      <input
+                        type="date"
+                        value={leaveForm.start_date}
+                        onChange={(e) => updateLeaveField("start_date", e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className={styles.field}>
+                      <label>End date</label>
+                      <input
+                        type="date"
+                        value={leaveForm.end_date}
+                        onChange={(e) => updateLeaveField("end_date", e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className={styles.field}>
+                    <label>Number of days</label>
+                    <input type="text" value={previewDays || ""} disabled readOnly />
+                  </div>
+
+                  <div className={styles.field}>
+                    <label>Reason</label>
+                    <textarea
+                      value={leaveForm.reason}
+                      onChange={(e) => updateLeaveField("reason", e.target.value)}
+                      rows={3}
+                      placeholder="Briefly explain why you need this leave…"
+                      required
+                    />
+                  </div>
+
+                  <div className={styles.field}>
+                    <label>Supporting document (optional)</label>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => updateLeaveField("document", e.target.files?.[0] ?? null)}
+                    />
+                  </div>
+
+                  <div className={styles.formActions}>
+                    <button
+                      type="button"
+                      className={`${styles.btn} ${styles.btnOutline}`}
+                      onClick={() => {
+                        setShowLeaveForm(false);
+                        setLeaveForm(EMPTY_LEAVE_FORM);
+                        setLeaveError(null);
+                      }}
+                      disabled={leaveSaving}
+                    >
+                      Cancel
+                    </button>
+                    <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={leaveSaving}>
+                      {leaveSaving ? "Submitting…" : "Submit request"}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {leaveLoading && <p className={styles.emptyNote}>Loading leave requests…</p>}
+              {!leaveLoading && leaveRequests.length === 0 && (
+                <p className={styles.emptyNote}>You haven't submitted any leave requests yet.</p>
+              )}
+              {!leaveLoading && leaveRequests.length > 0 && (
+                <div className={styles.tableWrap}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Type</th>
+                        <th>Dates</th>
+                        <th>Days</th>
+                        <th>Status</th>
+                        <th>Document</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {leaveRequests.map((lr) => (
+                        <tr key={lr.id}>
+                          <td data-label="Type">{LEAVE_TYPE_LABELS[lr.leave_type]}</td>
+                          <td data-label="Dates">{lr.start_date} → {lr.end_date}</td>
+                          <td data-label="Days">{lr.days}</td>
+                          <td data-label="Status">
+                            <span className={badgeClass(lr.status)}>{lr.status}</span>
+                          </td>
+                          <td data-label="Document">
+                            {lr.document_url ? (
+                              <button
+                                className={`${styles.btn} ${styles.btnOutline} ${styles.btnSmall}`}
+                                onClick={() => handleViewDocument(lr.document_url!)}
+                              >
+                                View
+                              </button>
+                            ) : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          </div>
         </div>
       </div>
     </main>
