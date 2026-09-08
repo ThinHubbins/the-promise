@@ -6,6 +6,10 @@ import { getCurrentUser, checkIsHR, hrSignOut } from '../../../lib/hrAuth';
 import StaffTab from '../../../components/hr/staffTab';
 import AttendanceTab from '../../../components/hr/AttendanceTab';
 import PayrollTab from '../../../components/hr/PayrollTab';
+import { fetchStaff } from '../../../lib/staff';
+import { fetchOpenAttendance } from '../../../lib/attendance';
+import { fetchAllLeaveRequests } from '../../../lib/leave';
+
 
 import styles from './hr-dashboard.module.css';
 import LeaveTab from '../../../components/hr/LeaveTab';
@@ -21,25 +25,58 @@ const NAV_ITEMS: { key: HRSection; label: string }[] = [
 ];
 
 function OverviewPanel() {
+  const [activeStaff, setActiveStaff] = useState<number | null>(null);
+  const [clockedIn, setClockedIn] = useState<number | null>(null);
+  const [pendingLeave, setPendingLeave] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [staff, openSessions, leaveRequests] = await Promise.all([
+          fetchStaff(),
+          fetchOpenAttendance(),
+          fetchAllLeaveRequests(),
+        ]);
+        if (cancelled) return;
+        setActiveStaff(staff.filter((s) => s.status === 'active').length);
+        setClockedIn(openSessions.length);
+        setPendingLeave(leaveRequests.filter((lr) => lr.status === 'pending').length);
+      } catch (err) {
+        console.error('Failed to load overview stats', err);
+        if (!cancelled) setError('Could not load live stats.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div>
       <div className={styles.kpiRow}>
         <div className={styles.kpiCell}>
-          <div className={styles.kpiValue}>—</div>
+          <div className={styles.kpiValue}>{loading ? '—' : activeStaff}</div>
           <div className={styles.kpiLabel}>Active staff</div>
         </div>
         <div className={styles.kpiCell}>
-          <div className={styles.kpiValue}>—</div>
+          <div className={styles.kpiValue}>{loading ? '—' : clockedIn}</div>
           <div className={styles.kpiLabel}>Clocked in now</div>
         </div>
         <div className={styles.kpiCell}>
-          <div className={styles.kpiValue}>—</div>
+          <div className={styles.kpiValue}>{loading ? '—' : pendingLeave}</div>
           <div className={styles.kpiLabel}>Pending leave requests</div>
         </div>
       </div>
-      <p className={styles.overviewNote}>
-        Live counts will populate here once wired to staff, attendance and leave data.
-      </p>
+      {error && <p className={styles.errorText}>{error}</p>}
     </div>
   );
 }

@@ -1,20 +1,23 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { fetchStaff } from '../../lib/staff';
-import { fetchPayrollOverview, markStaffPaid } from '../../lib/payroll';
-import type { StaffPayrollInfo, PayrollStatus } from '../../lib/types';
-import styles from '../../app/hr/dashboard/hr-dashboard.module.css';
+import React from 'react'; // add this if not already imported
+import { useEffect, useState } from "react";
+import { fetchStaff } from "../../lib/staff";
+import { fetchPayrollOverview, markStaffPaid } from "../../lib/payroll";
+import type { StaffPayrollInfo, PayrollStatus } from "../../lib/types";
+import styles from "../../app/hr/dashboard/hr-dashboard.module.css";
+import { fetchBankAccountsForStaffIds } from "../../lib/bankAccount";
+import type { BankAccount } from "../../lib/types";
 
 function formatNaira(n: number | null): string {
-  if (n == null) return '—';
-  return '\u20A6' + n.toLocaleString('en-NG');
+  if (n == null) return "—";
+  return "\u20A6" + n.toLocaleString("en-NG");
 }
 
 const STATUS_LABEL: Record<PayrollStatus, string> = {
-  in_progress: 'In progress',
-  almost_due: 'Almost due',
-  ready: 'Ready to pay',
+  in_progress: "In progress",
+  almost_due: "Almost due",
+  ready: "Ready to pay",
 };
 
 const STATUS_CLASS: Record<PayrollStatus, string> = {
@@ -27,19 +30,30 @@ export default function PayrollTab() {
   const [rows, setRows] = useState<StaffPayrollInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'all' | PayrollStatus>('all');
-  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<"all" | PayrollStatus>(
+    "all",
+  );
+  const [search, setSearch] = useState("");
   const [payingId, setPayingId] = useState<string | null>(null);
+  const [bankAccounts, setBankAccounts] = useState<Record<string, BankAccount>>(
+    {},
+  );
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
     setError(null);
     try {
       const staff = await fetchStaff();
-      setRows(await fetchPayrollOverview(staff));
+      const [payroll, banks] = await Promise.all([
+        fetchPayrollOverview(staff),
+        fetchBankAccountsForStaffIds(staff.map((s) => s.id)),
+      ]);
+      setRows(payroll);
+      setBankAccounts(banks);
     } catch (err) {
       console.error(err);
-      setError('Could not load payroll data.');
+      setError("Could not load payroll data.");
     } finally {
       setLoading(false);
     }
@@ -55,15 +69,19 @@ export default function PayrollTab() {
       await markStaffPaid(info);
       await load();
     } catch (err: any) {
-      alert(err?.message ?? 'Could not mark as paid.');
+      alert(err?.message ?? "Could not mark as paid.");
     } finally {
       setPayingId(null);
     }
   }
 
   const filtered = rows.filter((r) => {
-    if (statusFilter !== 'all' && r.status !== statusFilter) return false;
-    if (search && !r.staff.full_name.toLowerCase().includes(search.toLowerCase())) return false;
+    if (statusFilter !== "all" && r.status !== statusFilter) return false;
+    if (
+      search &&
+      !r.staff.full_name.toLowerCase().includes(search.toLowerCase())
+    )
+      return false;
     return true;
   });
 
@@ -105,31 +123,54 @@ export default function PayrollTab() {
                 <th>Days into cycle</th>
                 <th>Next due</th>
                 <th>Status</th>
+                <th>Bank details</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => (
-                <tr key={r.staff.id}>
-                  <td>{r.staff.full_name}</td>
-                  <td>{r.staff.department ?? '—'}</td>
-                  <td>{formatNaira(r.staff.salary)}</td>
-                  <td>{r.daysIntoCycle} / 30</td>
-                  <td>{r.nextDueDate}</td>
-                  <td>
-                    <span className={STATUS_CLASS[r.status]}>{STATUS_LABEL[r.status]}</span>
-                  </td>
-                  <td>
-                    <button
-                      className={styles.payBtn}
-                      disabled={r.status !== 'ready' || payingId === r.staff.id}
-                      onClick={() => handlePay(r)}
-                    >
-                      {payingId === r.staff.id ? 'Paying…' : 'Mark as Paid'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {filtered.map((r) => {
+  const bank = bankAccounts[r.staff.id];
+  const isOpen = expandedId === r.staff.id;
+  return (
+    <React.Fragment key={r.staff.id}>
+      <tr>
+        <td>{r.staff.full_name}</td>
+        <td>{r.staff.department ?? '—'}</td>
+        <td>{formatNaira(r.staff.salary)}</td>
+        <td>{r.daysIntoCycle} / 30</td>
+        <td>{r.nextDueDate}</td>
+        <td>
+          <span className={STATUS_CLASS[r.status]}>{STATUS_LABEL[r.status]}</span>
+        </td>
+        <td>
+  <button
+    className={`${styles.bankViewBtn} ${bank ? (isOpen ? styles.bankViewBtnOpen : '') : styles.bankViewBtnEmpty}`}
+    onClick={() => bank && setExpandedId(isOpen ? null : r.staff.id)}
+    disabled={!bank}
+  >
+    {bank ? (isOpen ? 'Hide' : 'View') : 'Not provided'}
+  </button>
+</td>
+        <td>
+          <button
+            className={styles.payBtn}
+            disabled={r.status !== 'ready' || payingId === r.staff.id}
+            onClick={() => handlePay(r)}
+          >
+            {payingId === r.staff.id ? 'Paying…' : 'Mark as Paid'}
+          </button>
+        </td>
+      </tr>
+      {isOpen && bank && (
+        <tr className={styles.bankDetailRow}>
+          <td colSpan={8}>
+            <strong>{bank.account_name}</strong> · {bank.bank_name} · {bank.account_number}
+          </td>
+        </tr>
+      )}
+    </React.Fragment>
+  );
+})}
             </tbody>
           </table>
         </div>

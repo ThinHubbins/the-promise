@@ -158,6 +158,7 @@ export interface StaffPayrollInfo {
   status: PayrollStatus;
   nextDueDate: string;
   lastPayment: PayrollPayment | null;
+  bankAccount?: BankAccount | null; // NEW — optional so it's non-breaking
 }
 
 export type LeaveType =
@@ -205,4 +206,20 @@ export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
   maternity_paternity: 'Maternity/Paternity Leave',
   emergency: 'Emergency Leave',
   other: 'Other',
+};
+
+export interface BankAccount {
+  id: string;
+  staff_id: string;
+  bank_name: string;
+  account_number: string;
+  account_name: string;
+  submitted_at: string;
+  updated_at: string;
+}
+
+export type BankAccountInput = {
+  bank_name: string;
+  account_number: string;
+  account_name: string;
 };

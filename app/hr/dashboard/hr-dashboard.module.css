@@ -404,3 +404,32 @@
   justify-content: center;
   color: #6B7280;
 }
+.bankViewBtn {
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 999px;
+  border: 1px solid var(--border-color, #d1d5db);
+  background: transparent;
+  color: var(--text-primary, #374151);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.bankViewBtn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: var(--text-primary, #374151);
+}
+
+.bankViewBtnOpen {
+  background: var(--accent-color, #111827);
+  color: #fff;
+  border-color: var(--accent-color, #111827);
+}
+
+.bankViewBtnEmpty {
+  color: #9ca3af;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
+  background: transparent;
+}
