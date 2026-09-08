@@ -59,7 +59,7 @@ function ratingBreakdown(reviews: Review[]) {
   return counts;
 }
 
-export default function ReviewsSection({ dishId }: { dishId: number }) {
+export default function ReviewsSection({ dishId }: { dishId: string })  {
   const { user, loading } = useAuth();
   const router = useRouter();
 

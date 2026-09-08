@@ -1,9 +1,11 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { use } from 'react';
-import { dishes } from '../../../lib/dishes';
-import DishIcon from '../../../components/DishIcon';
+import { fetchDishById } from '../../../lib/dishes';
+import type { Dish } from '../../../lib/types';
+import DishCarousel from '../../../components/DishCarousel';
 import { useCart } from '../../../context/CartContext';
 import { useAuth } from '../../../context/AuthContext';
 import ReviewsSection from '../../../components/ReviewSection';
@@ -16,17 +18,41 @@ export default function DishPage({ params }: { params: Promise<{ id: string }> }
   const { id } = use(params);
   const router = useRouter();
   const { addToCart } = useCart();
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  const dish = dishes.find((d) => d.id === Number(id));
+  const [dish, setDish] = useState<Dish | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        setDish(await fetchDishById(id));
+      } catch (err) {
+        console.error('Failed to load dish', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
 
   function handleAdd() {
-    if (!dish || loading) return;
+    if (!dish || authLoading) return;
     if (!user) {
       router.push('/login');
       return;
     }
     addToCart(dish.id);
+  }
+
+  if (loading) {
+    return (
+      <main>
+        <div className="wrap dish-page-wrap">
+          <p>Loading…</p>
+        </div>
+      </main>
+    );
   }
 
   if (!dish) {
@@ -50,10 +76,16 @@ export default function DishPage({ params }: { params: Promise<{ id: string }> }
         </button>
 
         <div className="dish-detail">
-          <div className={`dish-media tone-${dish.tone} dish-detail-media`}>
-            {dish.tag && <span className="dish-tag">{dish.tag}</span>}
-            <DishIcon type={dish.icon} />
-          </div>
+          {dish.images.length > 0 ? (
+            <div className="dish-detail-media">
+              {dish.tag && <span className="dish-tag">{dish.tag}</span>}
+              <DishCarousel images={dish.images} alt={dish.name} />
+            </div>
+          ) : (
+            <div className={`dish-media tone-${dish.tone} dish-detail-media`}>
+              {dish.tag && <span className="dish-tag">{dish.tag}</span>}
+            </div>
+          )}
 
           <div className="dish-detail-body">
             <span className="dish-cat">{dish.cat}</span>

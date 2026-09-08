@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
-import { dishes } from '../../lib/dishes';
+import { fetchDishes } from '../../lib/dishes';
+import type { Dish } from '../../lib/types';
 import DishIcon from '../../components/DishIcon';
 import { fetchOrders, createOrder, advanceOrderStep } from '../../lib/orders';
 import type { CartLine, Order, Address, Notification } from '../../lib/types';
@@ -62,6 +63,17 @@ export default function DashboardPage() {
   const [hydrated, setHydrated] = useState(false);
   const [checkoutNotice, setCheckoutNotice] = useState<string | null>(null);
 const [notifications, setNotifications] = useState<Notification[]>([]);
+const [dishes, setDishes] = useState<Dish[]>([]);
+
+useEffect(() => {
+  (async () => {
+    try {
+      setDishes(await fetchDishes());
+    } catch (err) {
+      console.error('Failed to load menu', err);
+    }
+  })();
+}, []);
 
 // Load saved notifications for this user once we know who they are
 useEffect(() => {
@@ -341,6 +353,7 @@ function NotificationsPanel({
 
           {activeNav === 'menu' && (
   <MenuPanel
+    dishes={dishes}
     cartItems={cartItems}
     cartTotal={cartTotal}
     onAdd={addToCart}
@@ -351,7 +364,6 @@ function NotificationsPanel({
     onAddAddress={goToAddAddress}
   />
 )}
-
           {activeNav === 'orders' && <OrdersPanel orders={orders} onTrack={scrollToTracking} />}
 
           {activeNav === 'track' && (
@@ -486,6 +498,7 @@ function OverviewPanel({
 }
 
 function MenuPanel({
+  dishes,
   cartItems,
   cartTotal,
   onAdd,
@@ -495,11 +508,12 @@ function MenuPanel({
   checkoutNotice,
   onAddAddress,
 }: {
+  dishes: Dish[];
   cartItems: CartLine[];
   cartTotal: number;
-  onAdd: (id: number) => void;
-  onChangeQty: (id: number, delta: number) => void;
-  onRemove: (id: number) => void;
+  onAdd: (id: string) => void;
+  onChangeQty: (id: string, delta: number) => void;
+  onRemove: (id: string) => void;
   onCheckout: () => void;
   checkoutNotice: string | null;
   onAddAddress: () => void;
@@ -517,19 +531,23 @@ function MenuPanel({
 
       <div className="dash-menu-grid">
         {dishes.map((d) => (
-          <div className="dash-menu-card" key={d.id}>
-            <div className={`dish-media tone-${d.tone}`}>
-              <DishIcon type={d.icon} />
-            </div>
-            <div className="dash-menu-body">
-              <h4>{d.name}</h4>
-              <span className="dash-menu-price">{formatNaira(d.price)}</span>
-              <button className="btn btn-outline btn-sm" onClick={() => onAdd(d.id)}>
-                Add to cart
-              </button>
-            </div>
-          </div>
-        ))}
+  <div className="dash-menu-card" key={d.id}>
+    <div className={`dish-media tone-${d.tone}`}>
+      {d.images && d.images.length > 0 ? (
+        <img src={d.images[0]} alt={d.name} className="dish-media-img" />
+      ) : (
+        <DishIcon type={d.icon} />
+      )}
+    </div>
+    <div className="dash-menu-body">
+      <h4>{d.name}</h4>
+      <span className="dash-menu-price">{formatNaira(d.price)}</span>
+      <button className="btn btn-outline btn-sm" onClick={() => onAdd(d.id)}>
+        Add to cart
+      </button>
+    </div>
+  </div>
+))}
       </div>
 
       <div className="dash-section-head-row">

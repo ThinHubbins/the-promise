@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { submitFundRequest, fetchFundRequestsForStaff } from "../../../lib/fundRequests";
+import type { FundRequest, FundRequestInput, FundRequestType } from "../../../lib/types";
+import { FUND_REQUEST_TYPE_LABELS } from "../../../lib/types";
 import { useRouter } from "next/navigation";
 import {
   getCurrentAuthUser,
@@ -48,13 +51,11 @@ function formatNaira(n: number | null): string {
 }
 
 function badgeClass(status: string) {
-  if (status === "active" || status === "approved")
-    return `${styles.badge} ${styles.badgeActive}`;
+  if (status === "active" || status === "approved" || status === "paid") return `${styles.badge} ${styles.badgeActive}`;
   if (status === "rejected") return `${styles.badge} ${styles.badgeRejected}`;
   if (status === "pending") return `${styles.badge} ${styles.badgePending}`;
   return `${styles.badge} ${styles.badgeInactive}`;
 }
-
 const EMPTY_LEAVE_FORM: LeaveRequestInput = {
   leave_type: "annual",
   start_date: "",
@@ -108,6 +109,30 @@ export default function StaffDashboardPage() {
       setBankLoading(false);
     }
   }, []);
+  const EMPTY_FUND_FORM: FundRequestInput = {
+  request_type: "petty_cash",
+  amount: "",
+  reason: "",
+  document: null,
+};
+
+const [fundRequests, setFundRequests] = useState<FundRequest[]>([]);
+const [fundLoading, setFundLoading] = useState(true);
+const [showFundForm, setShowFundForm] = useState(false);
+const [fundForm, setFundForm] = useState<FundRequestInput>(EMPTY_FUND_FORM);
+const [fundSaving, setFundSaving] = useState(false);
+const [fundError, setFundError] = useState<string | null>(null);
+
+const loadFundRequests = useCallback(async (staffId: string) => {
+  setFundLoading(true);
+  try {
+    setFundRequests(await fetchFundRequestsForStaff(staffId));
+  } catch (err) {
+    console.error("Failed to load fund requests", err);
+  } finally {
+    setFundLoading(false);
+  }
+}, []);
 
   useEffect(() => {
     (async () => {
@@ -186,13 +211,14 @@ export default function StaffDashboardPage() {
     }
   }, []);
 
-  useEffect(() => {
-    if (staff) {
-      loadHistory(staff.id);
-      loadLeaveRequests(staff.id);
-      loadBankAccount(staff.id); // NEW
-    }
-  }, [staff, loadHistory, loadLeaveRequests, loadBankAccount]);
+useEffect(() => {
+  if (staff) {
+    loadHistory(staff.id);
+    loadLeaveRequests(staff.id);
+    loadBankAccount(staff.id);
+    loadFundRequests(staff.id); // NEW
+  }
+}, [staff, loadHistory, loadLeaveRequests, loadBankAccount, loadFundRequests]);
 
   useEffect(() => {
     if (!staff) return;
@@ -201,6 +227,40 @@ export default function StaffDashboardPage() {
     });
     return unsubscribe;
   }, [staff, loadHistory]);
+
+  function updateFundField<K extends keyof FundRequestInput>(key: K, value: FundRequestInput[K]) {
+  setFundForm((f) => ({ ...f, [key]: value }));
+}
+
+async function handleFundSubmit(e: React.FormEvent) {
+  e.preventDefault();
+  if (!staff) return;
+
+  setFundError(null);
+  const amountNum = parseFloat(fundForm.amount);
+
+  if (!fundForm.amount || isNaN(amountNum) || amountNum <= 0) {
+    setFundError("Enter a valid amount greater than 0.");
+    return;
+  }
+  if (!fundForm.reason.trim()) {
+    setFundError("Please provide a reason for this request.");
+    return;
+  }
+
+  setFundSaving(true);
+  try {
+    const saved = await submitFundRequest(staff, fundForm);
+    setFundRequests((prev) => [saved, ...prev]);
+    setFundForm(EMPTY_FUND_FORM);
+    setShowFundForm(false);
+  } catch (err) {
+    console.error("Failed to submit fund request", err);
+    setFundError("Could not submit request. Please try again.");
+  } finally {
+    setFundSaving(false);
+  }
+}
 
   async function handleSignOut() {
     await staffSignOut();
@@ -705,6 +765,122 @@ export default function StaffDashboardPage() {
                 </form>
               )}
             </section>
+            <section className={styles.section}>
+  <div className={styles.sectionHead}>
+    <h2 className={styles.sectionTitle}>Fund Requests</h2>
+    {!showFundForm && (
+      <button
+        className={`${styles.btn} ${styles.btnPrimary} ${styles.btnSmall}`}
+        onClick={() => setShowFundForm(true)}
+      >
+        New request
+      </button>
+    )}
+  </div>
+
+  {showFundForm && (
+    <form onSubmit={handleFundSubmit} className={styles.form}>
+      {fundError && <p className={styles.errorText}>{fundError}</p>}
+
+      <div className={styles.field}>
+        <label>Request type</label>
+        <select
+          value={fundForm.request_type}
+          onChange={(e) => updateFundField("request_type", e.target.value as FundRequestType)}
+        >
+          {Object.entries(FUND_REQUEST_TYPE_LABELS).map(([key, label]) => (
+            <option key={key} value={key}>{label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className={styles.field}>
+        <label>Amount</label>
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          value={fundForm.amount}
+          onChange={(e) => updateFundField("amount", e.target.value)}
+          placeholder="0.00"
+          required
+        />
+      </div>
+
+      <div className={styles.field}>
+        <label>Outlet</label>
+        <input type="text" value={staff.outlet || "—"} disabled readOnly />
+      </div>
+
+      <div className={styles.field}>
+        <label>Reason / description</label>
+        <textarea
+          value={fundForm.reason}
+          onChange={(e) => updateFundField("reason", e.target.value)}
+          rows={3}
+          placeholder="What's this for?"
+          required
+        />
+      </div>
+
+      <div className={styles.field}>
+        <label>Supporting document/receipt (optional)</label>
+        <input
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png"
+          onChange={(e) => updateFundField("document", e.target.files?.[0] ?? null)}
+        />
+      </div>
+
+      <div className={styles.formActions}>
+        <button
+          type="button"
+          className={`${styles.btn} ${styles.btnOutline}`}
+          onClick={() => {
+            setShowFundForm(false);
+            setFundForm(EMPTY_FUND_FORM);
+            setFundError(null);
+          }}
+          disabled={fundSaving}
+        >
+          Cancel
+        </button>
+        <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={fundSaving}>
+          {fundSaving ? "Submitting…" : "Submit request"}
+        </button>
+      </div>
+    </form>
+  )}
+
+  {fundLoading && <p className={styles.emptyNote}>Loading fund requests…</p>}
+  {!fundLoading && fundRequests.length === 0 && (
+    <p className={styles.emptyNote}>You haven't submitted any fund requests yet.</p>
+  )}
+  {!fundLoading && fundRequests.length > 0 && (
+    <div className={styles.tableWrap}>
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Reason</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {fundRequests.map((fr) => (
+            <tr key={fr.id}>
+              <td>{FUND_REQUEST_TYPE_LABELS[fr.request_type]}</td>
+              <td>{formatNaira(fr.amount)}</td>
+              <td>{fr.reason}</td>
+              <td><span className={badgeClass(fr.status)}>{fr.status}</span></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+</section>
           </div>
         </div>
       </div>

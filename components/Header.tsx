@@ -13,6 +13,9 @@ export default function Header() {
   const { count } = useCart();
   const pathname = usePathname();
   const isAdminRoute = pathname?.startsWith('/admin');
+  const isHrRoute = pathname?.startsWith('/hr');
+  const isStaffRoute = pathname?.startsWith('/staff');
+  const isBackofficeRoute = isAdminRoute || isHrRoute || isStaffRoute;
   const [navOpen, setNavOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -20,6 +23,7 @@ export default function Header() {
     function onScroll() {
       setScrolled(window.scrollY > 8);
     }
+    onScroll();
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -31,8 +35,18 @@ export default function Header() {
     };
   }, [navOpen]);
 
+  useEffect(() => {
+    closeNav();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
   function closeNav() {
     setNavOpen(false);
+  }
+
+  function isActive(href: string) {
+    if (href === '/') return pathname === '/';
+    return pathname?.startsWith(href);
   }
 
   return (
@@ -49,12 +63,14 @@ export default function Header() {
         </Link>
 
         <nav className={`primary-nav${navOpen ? ' open' : ''}`}>
-          <Link href="/" onClick={closeNav}>Home</Link>
+          <Link href="/" onClick={closeNav} className={isActive('/') ? 'active' : ''}>Home</Link>
           <Link href="/#menu" onClick={closeNav}>Menu</Link>
-          <Link href="/feedbacks" onClick={closeNav}>Feedbacks</Link>
-          <Link href="/stores" onClick={closeNav}>Stores</Link>
-          {user && !isAdminRoute && (
-            <Link href="/dashboard" onClick={closeNav}>Dashboard</Link>
+          <Link href="/feedbacks" onClick={closeNav} className={isActive('/feedbacks') ? 'active' : ''}>Feedbacks</Link>
+          <Link href="/stores" onClick={closeNav} className={isActive('/stores') ? 'active' : ''}>Stores</Link>
+          {user && !isBackofficeRoute && (
+            <Link href="/dashboard" onClick={closeNav} className={isActive('/dashboard') ? 'active' : ''}>
+              Dashboard
+            </Link>
           )}
 
           <a href="tel:+2348129125100" className="mobile-nav-phone" onClick={closeNav}>
@@ -75,7 +91,7 @@ export default function Header() {
             +234 812 912 5100
           </span>
 
-          {!isAdminRoute && (
+          {!isBackofficeRoute && (
             !loading && user ? (
               <Link href="/dashboard" className="cart-btn" aria-label="Open your order" onClick={closeNav}>
                 <svg className="icon" viewBox="0 0 24 24">
@@ -123,6 +139,27 @@ export default function Header() {
       </div>
 
       <style jsx>{`
+        header {
+          position: sticky;
+          top: 0;
+          z-index: 60;
+          background: #fff;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+          transition: box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        header.scrolled {
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+        }
+
+        .nav-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 20px;
+          padding: 10px 0;
+        }
+
         .brand-mark {
           display: inline-flex;
           align-items: center;
@@ -140,6 +177,30 @@ export default function Header() {
           object-fit: cover;
         }
 
+        .primary-nav {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .primary-nav :global(a) {
+          padding: 8px 12px;
+          border-radius: 8px;
+          font-weight: 500;
+          color: inherit;
+          text-decoration: none;
+          transition: background 0.15s ease, color 0.15s ease;
+        }
+
+        .primary-nav :global(a:hover) {
+          background: rgba(0, 0, 0, 0.04);
+        }
+
+        .primary-nav :global(a.active) {
+          color: var(--red, #c0392b);
+          background: rgba(192, 57, 43, 0.08);
+        }
+
         .mobile-nav-phone {
           display: none;
         }
@@ -150,6 +211,41 @@ export default function Header() {
 
         .cart-btn-label {
           display: inline;
+        }
+
+        .cart-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .cart-count {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 18px;
+          height: 18px;
+          padding: 0 4px;
+          border-radius: 999px;
+          background: var(--red, #c0392b);
+          color: #fff;
+          font-size: 0.7rem;
+          font-weight: 700;
+        }
+
+        .menu-toggle {
+          display: none;
+          align-items: center;
+          justify-content: center;
+          width: 38px;
+          height: 38px;
+          border-radius: 8px;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          background: #fff;
+        }
+
+        .menu-toggle:hover {
+          background: rgba(0, 0, 0, 0.04);
         }
 
         @media (max-width: 860px) {
@@ -175,6 +271,10 @@ export default function Header() {
 
           .nav-actions {
             gap: 8px;
+          }
+
+          .menu-toggle {
+            display: inline-flex;
           }
 
           .nav-backdrop {
@@ -217,8 +317,13 @@ export default function Header() {
 
           .primary-nav :global(a) {
             padding: 14px 20px;
+            border-radius: 0;
             border-bottom: 1px solid rgba(0, 0, 0, 0.06);
             width: 100%;
+          }
+
+          .primary-nav :global(a.active) {
+            background: rgba(192, 57, 43, 0.06);
           }
 
           .mobile-nav-phone {

@@ -10,19 +10,19 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { dishes } from '../lib/dishes';
-import type { CartLine } from '../lib/types';
+import { fetchDishes } from '../lib/dishes';
+import type { CartLine, Dish } from '../lib/types';
 
-type RawEntry = { id: number; qty: number };
+type RawEntry = { id: string; qty: number };
 
 type CartContextValue = {
   items: CartLine[];
   total: number;
   count: number;
   toastMsg: string;
-  addToCart: (dishId: number, quantity?: number) => void;
-  changeQty: (dishId: number, delta: number) => void;
-  removeItem: (dishId: number) => void;
+  addToCart: (dishId: string, quantity?: number) => void;
+  changeQty: (dishId: string, delta: number) => void;
+  removeItem: (dishId: string) => void;
   clearCart: () => void;
 };
 
@@ -34,6 +34,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [dishMap, setDishMap] = useState<Map<string, Dish>>(new Map());
+
+  // Load dish data once, for cart line lookups (name/price)
+  useEffect(() => {
+    (async () => {
+      try {
+        const all = await fetchDishes();
+        setDishMap(new Map(all.map((d) => [d.id, d])));
+      } catch (err) {
+        console.error('Failed to load dishes for cart', err);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     try {
@@ -57,8 +71,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     toastTimer.current = setTimeout(() => setToastMsg(''), 2200);
   }
 
-  function addToCart(dishId: number, quantity = 1) {
-    const dish = dishes.find((d) => d.id === dishId);
+  function addToCart(dishId: string, quantity = 1) {
+    const dish = dishMap.get(dishId);
     setRaw((prev) => {
       const existing = prev.find((i) => i.id === dishId);
       if (existing) {
@@ -69,7 +83,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (dish) showToast(`${dish.name} added to your order`);
   }
 
-  function changeQty(dishId: number, delta: number) {
+  function changeQty(dishId: string, delta: number) {
     setRaw((prev) =>
       prev
         .map((i) => (i.id === dishId ? { ...i, qty: i.qty + delta } : i))
@@ -77,7 +91,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  function removeItem(dishId: number) {
+  function removeItem(dishId: string) {
     setRaw((prev) => prev.filter((i) => i.id !== dishId));
   }
 
@@ -88,12 +102,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const items: CartLine[] = useMemo(() => {
     return raw
       .map((entry) => {
-        const dish = dishes.find((d) => d.id === entry.id);
+        const dish = dishMap.get(entry.id);
         if (!dish) return null;
         return { id: dish.id, name: dish.name, price: dish.price, qty: entry.qty };
       })
       .filter((line): line is CartLine => line !== null);
-  }, [raw]);
+  }, [raw, dishMap]);
 
   const total = useMemo(() => items.reduce((sum, i) => sum + i.price * i.qty, 0), [items]);
   const count = useMemo(() => items.reduce((sum, i) => sum + i.qty, 0), [items]);

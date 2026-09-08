@@ -1,24 +1,13 @@
 export type IconType = 'rice' | 'burger' | 'shawarma' | 'soup' | 'snack' | 'drink';
 
-export type Dish = {
-  id: number;
-  name: string;
-  cat: string;
-  desc: string;
-  fullDesc: string; // longer description for the dish detail page
-  price: number;
-  icon: IconType;
-  tone: 'yellow' | 'red';
-  tag?: string;
-};
 export interface Review {
   id: string;
-  dishId: number;
+  dishId: string; // was number
   userId: string;
   userName: string;
-  rating: number; // 1–5
+  rating: number;
   comment: string;
-  date: string; // ISO string
+  date: string;
 }
 
 export interface Feedback {
@@ -85,12 +74,12 @@ export interface Category {
 }
 
 // lib/types.ts
-export type CartLine = {
-  id: number;
-  name: string;
-  price: number;
-  qty: number;
-};
+   export type CartLine = {
+     id: string; // was number
+     name: string;
+     price: number;
+     qty: number;
+   };
 
 export interface User {
   email: string;
@@ -222,4 +211,62 @@ export type BankAccountInput = {
   bank_name: string;
   account_number: string;
   account_name: string;
+};
+
+export type FundRequestType = 'petty_cash' | 'business_expense' | 'transport' | 'supplies' | 'other';
+export type FundRequestStatus = 'pending' | 'approved' | 'rejected' | 'paid';
+
+export const FUND_REQUEST_TYPE_LABELS: Record<FundRequestType, string> = {
+  petty_cash: 'Petty Cash',
+  business_expense: 'Business Expense',
+  transport: 'Transport',
+  supplies: 'Supplies',
+  other: 'Other',
+};
+
+export interface FundRequest {
+  id: string;
+  staff_id: string;
+  staff_name: string;
+  staff_code: string;
+  outlet: string | null;
+  request_type: FundRequestType;
+  amount: number;
+  reason: string;
+  document_url: string | null;
+  status: FundRequestStatus;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  submitted_at: string;
+}
+
+export type FundRequestInput = {
+  request_type: FundRequestType;
+  amount: string; // raw form input, parsed on submit
+  reason: string;
+  document?: File | null;
+};
+
+export type Dish = {
+  id: string; // was number — now a uuid from the DB
+  name: string;
+  cat: string;
+  desc: string;
+  fullDesc: string;
+  price: number;
+  icon: IconType;
+  tone: 'yellow' | 'red';
+  tag?: string;
+  images: string[]; // public URLs, up to 3
+};
+
+export type DishInput = {
+  name: string;
+  cat: string;
+  desc: string;
+  fullDesc: string;
+  price: string; // raw form input
+  icon: IconType;
+  tone: 'yellow' | 'red';
+  tag: string;
 };

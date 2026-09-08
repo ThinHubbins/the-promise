@@ -1,139 +1,92 @@
-import type { Dish, Category } from './types';
+import { createClient } from './supabase/client';
+import type { Dish, DishInput, IconType } from './types';
 
-export const dishes: Dish[] = [
-  {
-    id: 1,
-    name: 'Jollof Rice & Chicken',
-    cat: 'Rice & Combos',
-    desc: 'Smoky party-style jollof rice with grilled chicken.',
-    fullDesc: 'Our signature party jollof, slow-cooked over an open flame for that unmistakable smoky finish. Made with long-grain rice, blended fresh peppers, and a rich tomato base, then served with a generous portion of chargrilled chicken thigh and a side of fried plantain on request.',
-    price: 2500,
-    icon: 'rice',
-    tone: 'yellow',
-    tag: 'Bestseller',
-  },
-  {
-    id: 2,
-    name: 'Fried Rice & Turkey',
-    cat: 'Rice & Combos',
-    desc: 'Vegetable fried rice served with roast turkey.',
-    fullDesc: 'Lightly spiced fried rice tossed with diced carrots, green beans, sweetcorn and liver, finished with a touch of curry and thyme. Paired with a juicy roast turkey leg, seasoned overnight and oven-roasted until the skin is golden and crisp.',
-    price: 2800,
-    icon: 'rice',
-    tone: 'yellow',
-  },
-  {
-    id: 3,
-    name: 'Chicken Burger',
-    cat: 'Burgers',
-    desc: 'Grilled chicken patty, lettuce and house sauce.',
-    fullDesc: 'A tender chicken breast patty, marinated in garlic and paprika, grilled to order and stacked in a toasted brioche bun with crisp lettuce, sliced tomato, and our house-made spicy mayo. Served with a side of coleslaw.',
-    price: 1800,
-    icon: 'burger',
-    tone: 'red',
-  },
-  {
-    id: 4,
-    name: 'Beef Burger',
-    cat: 'Burgers',
-    desc: 'Seasoned beef patty stacked with fresh toppings.',
-    fullDesc: 'A juicy 100% beef patty, hand-seasoned with onions, garlic and black pepper, char-grilled and layered with melted cheese, lettuce, tomato and pickles between a soft brioche bun. Comes with a smoky burger sauce on the side.',
-    price: 1800,
-    icon: 'burger',
-    tone: 'red',
-  },
-  {
-    id: 5,
-    name: 'Beef Shawarma',
-    cat: 'Shawarma',
-    desc: 'Grilled beef strips wrapped with vegetables and sauce.',
-    fullDesc: 'Thinly sliced beef, marinated overnight in a blend of Middle Eastern spices and slow-roasted on the rotisserie. Wrapped warm in a soft flatbread with crisp cabbage, cucumber, sliced tomato, and a garlic-yoghurt sauce with a touch of chilli.',
-    price: 2200,
-    icon: 'shawarma',
-    tone: 'yellow',
-    tag: 'Popular',
-  },
-  {
-    id: 6,
-    name: 'Chicken Shawarma',
-    cat: 'Shawarma',
-    desc: 'Grilled chicken wrap with a spiced house sauce.',
-    fullDesc: 'Marinated chicken thigh strips, grilled until charred at the edges, wrapped with fresh lettuce, tomato, pickled cucumber and our signature spiced shawarma sauce. Finished with a light sprinkle of paprika and a side of fries.',
-    price: 2000,
-    icon: 'shawarma',
-    tone: 'yellow',
-  },
-  {
-    id: 7,
-    name: 'Egusi Soup & Poundo Yam',
-    cat: 'Soups & Swallow',
-    desc: 'Melon-seed soup with assorted meat and poundo yam.',
-    fullDesc: 'A rich, ground melon-seed soup simmered with palm oil, spinach, and a generous mix of assorted meat, dried fish and stockfish. Served piping hot alongside smooth, hand-pounded poundo yam.',
-    price: 2300,
-    icon: 'soup',
-    tone: 'red',
-  },
-  {
-    id: 8,
-    name: 'Native Soup & Garri',
-    cat: 'Soups & Swallow',
-    desc: 'Vegetable native soup served with garri.',
-    fullDesc: 'A hearty native-style vegetable soup made with a mix of local greens, palm oil, crayfish and smoked fish, simmered slowly to bring out a deep, savoury flavour. Served with soft, well-turned garri.',
-    price: 2100,
-    icon: 'soup',
-    tone: 'red',
-  },
-  {
-    id: 9,
-    name: 'Meat Pie',
-    cat: 'Snacks',
-    desc: 'Flaky pastry filled with seasoned minced meat.',
-    fullDesc: 'A golden, flaky pastry shell baked fresh daily and filled with a savoury mix of minced beef, potatoes, carrots and onions, seasoned with black pepper and thyme. Best enjoyed warm, straight out of the oven.',
-    price: 500,
-    icon: 'snack',
-    tone: 'yellow',
-  },
-  {
-    id: 10,
-    name: 'Scotch Eggs',
-    cat: 'Snacks',
-    desc: 'Boiled egg wrapped in seasoned meat, deep fried.',
-    fullDesc: 'A whole boiled egg wrapped in a well-seasoned layer of minced meat, coated in breadcrumbs and deep-fried to a crisp golden brown. A satisfying snack with a soft, savoury bite in every layer.',
-    price: 600,
-    icon: 'snack',
-    tone: 'yellow',
-  },
-  {
-    id: 11,
-    name: 'Zobo Drink',
-    cat: 'Drinks',
-    desc: 'Chilled hibiscus drink with a hint of ginger.',
-    fullDesc: 'Our house zobo is brewed from dried hibiscus petals, infused with fresh ginger, pineapple and a touch of cucumber, then chilled until ice-cold. A refreshing, naturally tart drink with no artificial flavouring.',
-    price: 500,
-    icon: 'drink',
-    tone: 'red',
-  },
-  {
-    id: 12,
-    name: 'Vanilla Ice Cream',
-    cat: 'Drinks',
-    desc: 'TP signature ice cream, served chilled.',
-    fullDesc: 'Smooth, creamy vanilla ice cream made with real vanilla, churned in-house and served in a chilled cup. A simple, satisfying way to round off any meal.',
-    price: 700,
-    icon: 'drink',
-    tone: 'red',
-  },
-];
+function mapRow(row: any): Dish {
+  return {
+    id: row.id,
+    name: row.name,
+    cat: row.cat,
+    desc: row.description, // ← column renamed
+    fullDesc: row.full_desc,
+    price: row.price,
+    icon: row.icon as IconType,
+    tone: row.tone,
+    tag: row.tag ?? undefined,
+    images: row.images ?? [],
+  };
+}
 
-export const categories: Category[] = [
-  { key: 'Rice & Combos', label: 'Rice & Combos', icon: 'rice', desc: 'Jollof rice, fried rice and combo plates served with chicken, turkey or fish.' },
-  { key: 'Burgers', label: 'Burgers', icon: 'burger', desc: 'Chicken, beef and ham burgers, grilled and stacked fresh to order.' },
-  { key: 'Shawarma', label: 'Shawarma', icon: 'shawarma', desc: 'Chicken and beef shawarma wraps, grilled fresh with house sauce.' },
-  { key: 'Soups & Swallow', label: 'Soups & Swallow', icon: 'soup', desc: 'Egusi, okazi, bitter leaf and native soups with garri, semo or poundo yam.' },
-  { key: 'Snacks', label: 'Snacks & Pastries', icon: 'snack', desc: 'Meat pies, chicken pies, scotch eggs, doughnuts and moimoi, made daily.' },
-  { key: 'Drinks', label: 'Drinks & Sweets', icon: 'drink', desc: 'Zobo, yoghurt, ice cream and chilled water to go with any order.' },
-];
+export async function fetchDishes(): Promise<Dish[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('dishes')
+    .select('*')
+    .order('created_at', { ascending: true });
+  if (error) {
+    console.error('Supabase fetchDishes error:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+    });
+    throw error;
+  }
+  return (data ?? []).map(mapRow);
+}
 
-export const FILTERS = ['All', 'Rice & Combos', 'Burgers', 'Shawarma', 'Soups & Swallow', 'Snacks', 'Drinks'] as const;
+export async function fetchDishById(id: string): Promise<Dish | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('dishes')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? mapRow(data) : null;
+}
 
-export type Filter = (typeof FILTERS)[number];
+export async function uploadDishImage(dishName: string, file: File): Promise<string> {
+  const supabase = createClient();
+  const ext = file.name.split('.').pop();
+  const safeName = dishName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const path = `${safeName}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+  const { error } = await supabase.storage.from('dish-images').upload(path, file);
+  if (error) throw error;
+
+  const { data } = supabase.storage.from('dish-images').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+export async function createDish(input: DishInput, imageFiles: File[]): Promise<Dish> {
+  const supabase = createClient();
+
+  const images = await Promise.all(
+    imageFiles.slice(0, 3).map((f) => uploadDishImage(input.name, f)),
+  );
+
+  const { data, error } = await supabase
+    .from('dishes')
+    .insert({
+      name: input.name.trim(),
+      cat: input.cat,
+      description: input.desc.trim(), // ← column renamed
+      full_desc: input.fullDesc.trim(),
+      price: parseFloat(input.price),
+      icon: input.icon,
+      tone: input.tone,
+      tag: input.tag.trim() || null,
+      images,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapRow(data);
+}
+
+export async function deleteDish(id: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.from('dishes').delete().eq('id', id);
+  if (error) throw error;
+}

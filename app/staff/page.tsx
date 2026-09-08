@@ -187,7 +187,7 @@ export default function AdminStaffPage() {
             <p>View, add, and manage your staff records.</p>
           </div>
           <div className="admin-header-actions">
-            <Link href="/admin/analytics" className="btn btn-outline btn-sm">
+            <Link href="/admin" className="btn btn-outline btn-sm">
               Analytics
             </Link>
             <button

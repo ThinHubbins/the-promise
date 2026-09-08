@@ -233,12 +233,25 @@ export default function AdminAnalyticsPage() {
             <p>A live snapshot of how the business is performing.</p>
           </div>
           <div className="admin-header-actions">
-  <Link href="/admin/feedbacks" className="btn btn-outline btn-sm">Customer Reviews</Link>
-  <Link href="/admin/careers" className="btn btn-outline btn-sm">Manage Career</Link>
-            <span className={`admin-live-badge${isLive ? " live" : ""}`}>
-              <span className="admin-live-dot" />
-              {isLive ? "Live" : "Connecting…"}
-            </span>
+            <Link href="/staff" className="btn btn-outline btn-sm">
+              Add Staff
+            </Link>
+            <Link href="/admin/menu" className="btn btn-outline btn-sm">
+              Add Item
+            </Link>
+            <Link href="/admin/feedbacks" className="btn btn-outline btn-sm">
+              Customer Reviews
+            </Link>
+            <Link href="/admin/careers" className="btn btn-outline btn-sm">
+              Manage Career
+            </Link>
+            <Link
+              href="/admin/fund-requests"
+              className="btn btn-outline btn-sm"
+            >
+              Fund Requests
+            </Link>
+          
             <button
               className="btn btn-outline btn-sm"
               onClick={loadOrders}
@@ -436,10 +449,10 @@ export default function AdminAnalyticsPage() {
                     <tbody>
                       {bestSellers.map((b, i) => (
                         <tr key={b.name}>
-                          <td>{i + 1}</td>
-                          <td>{b.name}</td>
-                          <td>{b.qty}</td>
-                          <td>{formatNaira(b.revenue)}</td>
+                          <td data-label="#">{i + 1}</td>
+                          <td data-label="Item">{b.name}</td>
+                          <td data-label="Qty Sold">{b.qty}</td>
+                          <td data-label="Revenue">{formatNaira(b.revenue)}</td>
                         </tr>
                       ))}
                     </tbody>

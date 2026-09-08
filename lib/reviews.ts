@@ -15,7 +15,7 @@ function mapRow(row: any): Review {
   };
 }
 
-export async function fetchReviews(dishId: number): Promise<Review[]> {
+export async function fetchReviews(dishId: string): Promise<Review[]> {
   const { data, error } = await supabase
     .from('reviews')
     .select('*')
@@ -29,7 +29,7 @@ export async function fetchReviews(dishId: number): Promise<Review[]> {
 export async function createReview(
   userId: string,
   userName: string,
-  dishId: number,
+  dishId: string,
   rating: number,
   comment: string
 ): Promise<Review> {

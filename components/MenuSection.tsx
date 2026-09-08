@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import DishIcon from "./DishIcon";
-import { dishes, categories, FILTERS, type Filter } from "../lib/dishes";
+import { fetchDishes } from "../lib/dishes";
+import { categories, FILTERS, type Filter } from "../lib/dishCategories";
+import type { Dish } from "../lib/types";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -13,9 +15,23 @@ function formatNaira(n: number): string {
 
 export default function MenuSection() {
   const [filter, setFilter] = useState<Filter>("All");
+  const [dishes, setDishes] = useState<Dish[]>([]);
+  const [loadingDishes, setLoadingDishes] = useState(true);
   const { addToCart } = useCart();
   const { user, loading } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setDishes(await fetchDishes());
+      } catch (err) {
+        console.error("Failed to load menu", err);
+      } finally {
+        setLoadingDishes(false);
+      }
+    })();
+  }, []);
 
   function goToFilter(key: Filter) {
     setFilter(key);
@@ -24,7 +40,7 @@ export default function MenuSection() {
     });
   }
 
-  function handleAdd(dishId: number) {
+  function handleAdd(dishId: string) {
     if (loading) return;
 
     if (!user) {
@@ -35,7 +51,7 @@ export default function MenuSection() {
     addToCart(dishId);
   }
 
-  function goToDish(dishId: number) {
+  function goToDish(dishId: string) {
     router.push(`/dish/${dishId}`);
   }
 
@@ -80,65 +96,82 @@ export default function MenuSection() {
           </div>
 
           {/* Dish Grid */}
-          <div className="dish-grid">
-            {visibleDishes.map((d) => (
-              <div
-                className="dish-card cursor-pointer"
-                key={d.id}
-                onClick={() => goToDish(d.id)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    goToDish(d.id);
-                  }
-                }}
-              >
-                {/* Dish Image / Icon */}
-                <div className={`dish-media tone-${d.tone}`}>
-                  {d.tag && <span className="dish-tag">{d.tag}</span>}
+          {loadingDishes ? (
+            <div className="reviews-loading">
+              <span className="reviews-spinner" />
+              Loading menu…
+            </div>
+          ) : visibleDishes.length === 0 ? (
+            <p className="reviews-empty">No dishes in this category yet.</p>
+          ) : (
+            <div className="dish-grid">
+              {visibleDishes.map((d) => (
+                <div
+                  className="dish-card cursor-pointer"
+                  key={d.id}
+                  onClick={() => goToDish(d.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      goToDish(d.id);
+                    }
+                  }}
+                >
+                  {/* Dish Image / Icon */}
+                  <div className={`dish-media tone-${d.tone}`}>
+                    {d.tag && <span className="dish-tag">{d.tag}</span>}
 
-                  <DishIcon type={d.icon} />
-                </div>
+                    {d.images && d.images.length > 0 ? (
+                      <img
+                        src={d.images[0]}
+                        alt={d.name}
+                        className="dish-media-img"
+                      />
+                    ) : (
+                      <DishIcon type={d.icon} />
+                    )}
+                  </div>
 
-                {/* Dish Details */}
-                <div className="dish-body cursor-pointer">
-                  <span className="dish-cat">{d.cat}</span>
+                  {/* Dish Details */}
+                  <div className="dish-body cursor-pointer">
+                    <span className="dish-cat">{d.cat}</span>
 
-                  <h3>{d.name}</h3>
+                    <h3>{d.name}</h3>
 
-                  <p className="desc">{d.desc}</p>
+                    <p className="desc">{d.desc}</p>
 
-                  <div className="dish-foot">
-                    <span className="dish-price">{formatNaira(d.price)}</span>
+                    <div className="dish-foot">
+                      <span className="dish-price">{formatNaira(d.price)}</span>
 
-                    <button
-                      type="button"
-                      className="add-btn cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAdd(d.id);
-                      }}
-                    >
-                      <svg
-                        className="icon"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
+                      <button
+                        type="button"
+                        className="add-btn cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAdd(d.id);
+                        }}
                       >
-                        <line x1="12" y1="5" x2="12" y2="19" />
-                        <line x1="5" y1="12" x2="19" y2="12" />
-                      </svg>
-                      Add
-                    </button>
+                        <svg
+                          className="icon"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        >
+                          <line x1="12" y1="5" x2="12" y2="19" />
+                          <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                        Add
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </>

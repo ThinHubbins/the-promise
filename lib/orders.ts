@@ -40,7 +40,7 @@ export async function createOrder(
     amount: number;
     trackingId: string;
     addressId?: string | null;
-    items: { dishId: number; name: string; price: number; qty: number }[];
+    items: { dishId: string; name: string; price: number; qty: number }[];
   }
 ): Promise<Order> {
   const supabase = createClient();
