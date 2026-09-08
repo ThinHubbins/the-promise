@@ -1,92 +1,114 @@
+// context/CartContext.tsx
 'use client';
 
 import {
   createContext,
   useContext,
-  useState,
-  useCallback,
+  useEffect,
   useMemo,
+  useRef,
+  useState,
   type ReactNode,
 } from 'react';
 import { dishes } from '../lib/dishes';
 import type { CartLine } from '../lib/types';
 
-type CartMap = Record<number, number>; // dishId -> qty
+type RawEntry = { id: number; qty: number };
 
-interface CartContextValue {
+type CartContextValue = {
   items: CartLine[];
   total: number;
   count: number;
-  addToCart: (id: number) => void;
-  changeQty: (id: number, delta: number) => void;
-  removeItem: (id: number) => void;
+  toastMsg: string;
+  addToCart: (dishId: number, quantity?: number) => void;
+  changeQty: (dishId: number, delta: number) => void;
+  removeItem: (dishId: number) => void;
   clearCart: () => void;
-  showToast: (msg: string) => void;
-  toastMsg: string | null;
-}
+};
 
-const CartContext = createContext<CartContextValue | null>(null);
+const CartContext = createContext<CartContextValue | undefined>(undefined);
+const STORAGE_KEY = 'promise_cart';
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [cart, setCart] = useState<CartMap>({});
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [raw, setRaw] = useState<RawEntry[]>([]);
+  const [hydrated, setHydrated] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const showToast = useCallback((msg: string) => {
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) setRaw(JSON.parse(stored));
+    } catch {
+      // ignore malformed storage
+    } finally {
+      setHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(raw));
+  }, [raw, hydrated]);
+
+  function showToast(msg: string) {
     setToastMsg(msg);
-    setTimeout(() => setToastMsg((current) => (current === msg ? null : current)), 2200);
-  }, []);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastMsg(''), 2200);
+  }
 
-  const addToCart = useCallback(
-    (id: number) => {
-      setCart((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
-      showToast('Added to your order');
-    },
-    [showToast]
-  );
-
-  const changeQty = useCallback((id: number, delta: number) => {
-    setCart((prev) => {
-      const next = { ...prev };
-      const qty = (next[id] || 0) + delta;
-      if (qty <= 0) delete next[id];
-      else next[id] = qty;
-      return next;
+  function addToCart(dishId: number, quantity = 1) {
+    const dish = dishes.find((d) => d.id === dishId);
+    setRaw((prev) => {
+      const existing = prev.find((i) => i.id === dishId);
+      if (existing) {
+        return prev.map((i) => (i.id === dishId ? { ...i, qty: i.qty + quantity } : i));
+      }
+      return [...prev, { id: dishId, qty: quantity }];
     });
-  }, []);
+    if (dish) showToast(`${dish.name} added to your order`);
+  }
 
-  const removeItem = useCallback((id: number) => {
-    setCart((prev) => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
-  }, []);
+  function changeQty(dishId: number, delta: number) {
+    setRaw((prev) =>
+      prev
+        .map((i) => (i.id === dishId ? { ...i, qty: i.qty + delta } : i))
+        .filter((i) => i.qty > 0)
+    );
+  }
 
-  const clearCart = useCallback(() => setCart({}), []);
+  function removeItem(dishId: number) {
+    setRaw((prev) => prev.filter((i) => i.id !== dishId));
+  }
 
-  const items = useMemo<CartLine[]>(
-    () =>
-      Object.entries(cart).map(([id, qty]) => {
-        const dish = dishes.find((d) => d.id === Number(id))!;
-        return { ...dish, qty };
-      }),
-    [cart]
-  );
+  function clearCart() {
+    setRaw([]);
+  }
 
-  const total = useMemo(() => items.reduce((sum, it) => sum + it.qty * it.price, 0), [items]);
-  const count = useMemo(() => items.reduce((sum, it) => sum + it.qty, 0), [items]);
+  const items: CartLine[] = useMemo(() => {
+    return raw
+      .map((entry) => {
+        const dish = dishes.find((d) => d.id === entry.id);
+        if (!dish) return null;
+        return { id: dish.id, name: dish.name, price: dish.price, qty: entry.qty };
+      })
+      .filter((line): line is CartLine => line !== null);
+  }, [raw]);
+
+  const total = useMemo(() => items.reduce((sum, i) => sum + i.price * i.qty, 0), [items]);
+  const count = useMemo(() => items.reduce((sum, i) => sum + i.qty, 0), [items]);
 
   return (
     <CartContext.Provider
-      value={{ items, total, count, addToCart, changeQty, removeItem, clearCart, showToast, toastMsg }}
+      value={{ items, total, count, toastMsg, addToCart, changeQty, removeItem, clearCart }}
     >
       {children}
     </CartContext.Provider>
   );
 }
 
-export function useCart(): CartContextValue {
+export function useCart() {
   const ctx = useContext(CartContext);
-  if (!ctx) throw new Error('useCart must be used inside <CartProvider>');
+  if (!ctx) throw new Error('useCart must be used within a CartProvider');
   return ctx;
 }

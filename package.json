@@ -6,11 +6,11 @@
   "directories": {
     "lib": "lib"
   },
-"scripts": {
-  "dev": "next dev",
-  "build": "next build",
-  "start": "next start"
-},
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ThinHubbins/the-promise.git"
@@ -21,8 +21,12 @@
   },
   "homepage": "https://github.com/ThinHubbins/the-promise#readme",
   "dependencies": {
+    "@supabase/ssr": "^0.12.6",
+    "@supabase/supabase-js": "^2.116.0",
+    "chart.js": "^4.5.1",
     "next": "^16.3.4",
     "react": "^19.2.8",
+    "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.8"
   },
   "devDependencies": {

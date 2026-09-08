@@ -5,79 +5,100 @@ import {
   useContext,
   useEffect,
   useState,
-  useCallback,
   type ReactNode,
 } from 'react';
-import type { User } from '../lib/types';
+import type { Session, User } from '@supabase/supabase-js';
+import { createClient } from '../lib/supabase/client';
 
-interface AuthContextValue {
+type AuthContextValue = {
   user: User | null;
+  session: Session | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<User>;
-  logout: () => void;
-  getToken: () => string | null;
-  isAuthenticated: boolean;
-}
+  signup: (name: string, email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+};
 
-const AuthContext = createContext<AuthContextValue | null>(null);
-const TOKEN_KEY = 'tp_token';
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const supabase = createClient();
+
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
-    if (!token) {
+    // Load the current session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
       setLoading(false);
-      return;
-    }
-    fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then((data: { user: User }) => setUser(data.user))
-      .catch(() => {
-        localStorage.removeItem(TOKEN_KEY);
-        setUser(null);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  const login = useCallback(async (email: string, password: string): Promise<User> => {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
     });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({} as { message?: string }));
-      throw new Error(err.message || 'Could not log in. Please try again.');
-    }
+    // Keep state in sync with auth events (sign in, sign out, token refresh)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
 
-    const data = (await res.json()) as { token: string; user: User };
-    localStorage.setItem(TOKEN_KEY, data.token);
+    return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function signup(name: string, email: string, password: string) {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name },
+      },
+    });
+
+    if (error) throw new Error(error.message);
+
+    // If email confirmation is enabled in your Supabase project,
+    // data.session will be null here until the user confirms their email.
+    setSession(data.session);
     setUser(data.user);
-    return data.user;
-  }, []);
+  }
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
+  async function login(email: string, password: string) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) throw new Error(error.message);
+
+    setSession(data.session);
+    setUser(data.user);
+  }
+
+  async function logout() {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw new Error(error.message);
+
+    setSession(null);
     setUser(null);
-  }, []);
-
-  const getToken = useCallback((): string | null => {
-    return typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
-  }, []);
+  }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, getToken, isAuthenticated: !!user }}>
+    <AuthContext.Provider
+      value={{ user, session, loading, signup, login, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
-export function useAuth(): AuthContextValue {
+export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');
+  if (!ctx) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
   return ctx;
 }

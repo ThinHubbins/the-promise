@@ -5,8 +5,16 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { dishes } from '../../lib/dishes';
-import type { CartLine } from '../../lib/types';
 import DishIcon from '../../components/DishIcon';
+import { fetchOrders, createOrder, advanceOrderStep } from '../../lib/orders';
+import type { CartLine, Order, Address, Notification } from '../../lib/types';
+import {
+  fetchAddresses,
+  createAddress,
+  updateAddress,
+  deleteAddress,
+  setDefaultAddress,
+} from '../../lib/addresses';
 
 function formatNaira(n: number): string {
   return '\u20A6' + n.toLocaleString('en-NG');
@@ -16,38 +24,6 @@ function formatNaira(n: number): string {
 
 type OrderStatus = 'Order Placed' | 'Processing' | 'Shipped' | 'Out for Delivery' | 'Delivered';
 const STEPS: OrderStatus[] = ['Order Placed', 'Processing', 'Shipped', 'Out for Delivery', 'Delivered'];
-
-interface OrderItem {
-  name: string;
-  qty: number;
-  price: number;
-}
-
-interface Order {
-  id: string;
-  items: OrderItem[];
-  amount: number;
-  date: string;
-  stepIndex: number;
-  trackingId: string;
-  courier: string;
-  location: string;
-  eta: string;
-}
-
-interface Address {
-  id: string;
-  label: string;
-  fullName: string;
-  phone: string;
-  addressLine: string;
-  city: string;
-  state: string;
-  isDefault: boolean;
-}
-
-const ORDERS_KEY = 'tp_orders';
-const ADDRESSES_KEY = 'tp_addresses';
 
 const NAV_ITEMS = [
   { key: 'overview', label: 'Dashboard' },
@@ -61,38 +37,6 @@ const NAV_ITEMS = [
 ] as const;
 
 type NavKey = (typeof NAV_ITEMS)[number]['key'];
-
-/* ---------------- localStorage helpers ---------------- */
-
-function loadOrders(): Order[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(ORDERS_KEY);
-    return raw ? (JSON.parse(raw) as Order[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveOrders(orders: Order[]) {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
-}
-
-function loadAddresses(): Address[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(ADDRESSES_KEY);
-    return raw ? (JSON.parse(raw) as Address[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveAddresses(addresses: Address[]) {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(ADDRESSES_KEY, JSON.stringify(addresses));
-}
 
 function makeOrderId(): string {
   const d = new Date();
@@ -116,33 +60,83 @@ export default function DashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const [checkoutNotice, setCheckoutNotice] = useState<string | null>(null);
+const [notifications, setNotifications] = useState<Notification[]>([]);
 
+// Load saved notifications for this user once we know who they are
+useEffect(() => {
+  if (!user) return;
+  try {
+    const raw = localStorage.getItem(`notifications:${user.id}`);
+    if (raw) setNotifications(JSON.parse(raw));
+  } catch (err) {
+    console.error('Failed to load notifications', err);
+  }
+}, [user]);
+
+// Persist whenever they change
+useEffect(() => {
+  if (!user) return;
+  localStorage.setItem(`notifications:${user.id}`, JSON.stringify(notifications));
+}, [notifications, user]);
+
+function pushNotification(orderId: string, message: string) {
+  setNotifications((prev) => [
+    { id: `${orderId}-${Date.now()}`, orderId, message, date: new Date().toISOString(), read: false },
+    ...prev,
+  ]);
+}
+
+const unreadCount = notifications.filter((n) => !n.read).length;
+
+function markAllRead() {
+  setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+}
   useEffect(() => {
     if (!loading && !user) router.replace('/login');
   }, [loading, user, router]);
 
   useEffect(() => {
-    setOrders(loadOrders());
-    setAddresses(loadAddresses());
-    setHydrated(true);
-  }, []);
+    if (!user) return;
+    (async () => {
+      try {
+        const [o, a] = await Promise.all([fetchOrders(), fetchAddresses()]);
+        setOrders(o);
+        setAddresses(a);
+      } catch (err) {
+        console.error('Failed to load dashboard data', err);
+      } finally {
+        setHydrated(true);
+      }
+    })();
+  }, [user]);
 
   // Simulated progression for whichever order isn't delivered yet
   useEffect(() => {
-    if (orders.length === 0) return;
-    const interval = setInterval(() => {
-      setOrders((prev) => {
-        const idx = prev.findIndex((o) => o.stepIndex < STEPS.length - 1);
-        if (idx === -1) return prev;
-        const next = prev.map((o, i) =>
-          i === idx ? { ...o, stepIndex: Math.min(o.stepIndex + 1, STEPS.length - 1) } : o
-        );
-        saveOrders(next);
-        return next;
-      });
-    }, 8000);
-    return () => clearInterval(interval);
-  }, [orders.length]);
+  if (orders.length === 0) return;
+  const interval = setInterval(async () => {
+    const idx = orders.findIndex((o) => o.stepIndex < STEPS.length - 1);
+    if (idx === -1) return;
+    const target = orders[idx];
+    const nextStep = Math.min(target.stepIndex + 1, STEPS.length - 1);
+    try {
+      await advanceOrderStep(target.dbId, nextStep);
+      setOrders((prev) =>
+        prev.map((o) => (o.dbId === target.dbId ? { ...o, stepIndex: nextStep } : o))
+      );
+
+      const label = STEPS[nextStep];
+      if (label === 'Shipped') {
+        pushNotification(target.id, `Order ${target.id} has shipped out.`);
+      } else if (label === 'Delivered') {
+        pushNotification(target.id, `Order ${target.id} has been delivered.`);
+      }
+    } catch (err) {
+      console.error('Failed to advance order step', err);
+    }
+  }, 8000);
+  return () => clearInterval(interval);
+}, [orders]);
 
   const activeOrder = useMemo(
     () => orders.find((o) => o.stepIndex < STEPS.length - 1),
@@ -157,10 +151,11 @@ export default function DashboardPage() {
     return { total, active, delivered, pending };
   }, [orders]);
 
-  function goToNav(key: NavKey) {
-    setActiveNav(key);
-    setSidebarOpen(false);
-  }
+function goToNav(key: NavKey) {
+  setActiveNav(key);
+  setSidebarOpen(false);
+  if (key === 'notifications') markAllRead();
+}
 
   function scrollToTracking(orderId: string) {
     setActiveNav('track');
@@ -174,25 +169,41 @@ export default function DashboardPage() {
     });
   }
 
-  function handleCheckout() {
-    if (cartItems.length === 0) return;
-    const newOrder: Order = {
-      id: makeOrderId(),
-      items: cartItems.map((ci) => ({ name: ci.name, qty: ci.qty, price: ci.price })),
+  async function handleCheckout() {
+  if (cartItems.length === 0 || !user) return;
+
+  if (addresses.length === 0) {
+    setCheckoutNotice('Please add a delivery address before checking out.');
+    return;
+  }
+
+  setCheckoutNotice(null);
+  try {
+    const newOrder = await createOrder(user.id, {
+      orderCode: makeOrderId(),
       amount: cartTotal,
-      date: new Date().toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' }),
-      stepIndex: 0,
       trackingId: `TRK-${Math.floor(10000 + Math.random() * 89999)}`,
-      courier: 'Pending assignment',
-      location: 'Kitchen — preparing order',
-      eta: 'Awaiting confirmation',
-    };
-    const next = [newOrder, ...orders];
-    setOrders(next);
-    saveOrders(next);
+      addressId: addresses.find((a) => a.isDefault)?.id ?? addresses[0].id,
+      items: cartItems.map((ci) => ({
+        dishId: ci.id,
+        name: ci.name,
+        price: ci.price,
+        qty: ci.qty,
+      })),
+    });
+    setOrders((prev) => [newOrder, ...prev]);
+    pushNotification(newOrder.id, `Your order ${newOrder.id} has been placed.`);
     clearCart();
     setActiveNav('track');
+  } catch (err) {
+    console.error('Checkout failed', err);
   }
+}
+
+function goToAddAddress() {
+  setCheckoutNotice(null);
+  setActiveNav('addresses');
+}
 
   async function handleLogout() {
     await logout();
@@ -209,6 +220,62 @@ export default function DashboardPage() {
     );
   }
 
+  // Supabase's User object has no top-level `name` — the signup form
+  // stores it under user_metadata.full_name. Map it into the shape the
+  // sub-panels below already expect.
+  const displayUser = {
+    name: (user.user_metadata?.full_name as string | undefined) ?? undefined,
+    email: user.email,
+  };
+  
+
+
+function NotificationsPanel({
+  notifications,
+  onMarkAllRead,
+}: {
+  notifications: Notification[];
+  onMarkAllRead: () => void;
+}) {
+  return (
+    <>
+      <div className="section-head">
+        <div>
+          <span className="section-tag">Updates</span>
+          <h2>Notifications</h2>
+        </div>
+        {notifications.length > 0 && (
+          <button className="btn btn-outline btn-sm" onClick={onMarkAllRead}>
+            Mark all as read
+          </button>
+        )}
+      </div>
+
+      {notifications.length === 0 ? (
+        <div className="dash-empty-card">
+          <p>You have no notifications yet.</p>
+        </div>
+      ) : (
+        <div className="dash-notification-list">
+          {notifications.map((n) => (
+            <div className={`dash-notification-card${n.read ? '' : ' unread'}`} key={n.id}>
+              <p className="dash-notification-message">{n.message}</p>
+              <span className="dash-notification-date">
+                {new Date(n.date).toLocaleString('en-NG', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+
+
   return (
     <main>
       <div className="dash-shell">
@@ -224,27 +291,32 @@ export default function DashboardPage() {
         {/* Sidebar */}
         <aside className={`dash-sidebar${sidebarOpen ? ' open' : ''}`}>
           <div className="dash-user">
-            <div className="dash-avatar">{(user.name ?? user.email ?? 'U').charAt(0).toUpperCase()}</div>
+            <div className="dash-avatar">
+              {(displayUser.name ?? displayUser.email ?? 'U').charAt(0).toUpperCase()}
+            </div>
             <div>
-              <p className="dash-user-name">{user.name ?? 'Welcome'}</p>
-              <p className="dash-user-email">{user.email}</p>
+              <p className="dash-user-name">{displayUser.name ?? 'Welcome'}</p>
+              <p className="dash-user-email">{displayUser.email}</p>
             </div>
           </div>
 
           <nav className="dash-nav">
-            {NAV_ITEMS.map((item) => (
-              <button
-                key={item.key}
-                className={`dash-nav-link${activeNav === item.key ? ' active' : ''}`}
-                onClick={() => goToNav(item.key)}
-              >
-                {item.label}
-                {item.key === 'menu' && cartItems.length > 0 && (
-                  <span className="dash-nav-badge">{cartItems.length}</span>
-                )}
-              </button>
-            ))}
-          </nav>
+  {NAV_ITEMS.map((item) => (
+    <button
+      key={item.key}
+      className={`dash-nav-link${activeNav === item.key ? ' active' : ''}`}
+      onClick={() => goToNav(item.key)}
+    >
+      {item.label}
+      {item.key === 'menu' && cartItems.length > 0 && (
+        <span className="dash-nav-badge">{cartItems.length}</span>
+      )}
+      {item.key === 'notifications' && unreadCount > 0 && (
+        <span className="dash-nav-badge">{unreadCount}</span>
+      )}
+    </button>
+  ))}
+</nav>
 
           <button className="dash-nav-link dash-logout" onClick={handleLogout}>
             Logout
@@ -255,7 +327,7 @@ export default function DashboardPage() {
         <section className="dash-main">
           {activeNav === 'overview' && (
             <OverviewPanel
-              user={user}
+              user={displayUser}
               stats={stats}
               activeOrder={activeOrder}
               orders={orders}
@@ -268,15 +340,17 @@ export default function DashboardPage() {
           )}
 
           {activeNav === 'menu' && (
-            <MenuPanel
-              cartItems={cartItems}
-              cartTotal={cartTotal}
-              onAdd={addToCart}
-              onChangeQty={changeQty}
-              onRemove={removeItem}
-              onCheckout={handleCheckout}
-            />
-          )}
+  <MenuPanel
+    cartItems={cartItems}
+    cartTotal={cartTotal}
+    onAdd={addToCart}
+    onChangeQty={changeQty}
+    onRemove={removeItem}
+    onCheckout={handleCheckout}
+    checkoutNotice={checkoutNotice}
+    onAddAddress={goToAddAddress}
+  />
+)}
 
           {activeNav === 'orders' && <OrdersPanel orders={orders} onTrack={scrollToTracking} />}
 
@@ -285,20 +359,14 @@ export default function DashboardPage() {
           )}
 
           {activeNav === 'addresses' && (
-            <AddressesPanel
-              addresses={addresses}
-              setAddresses={(a) => {
-                setAddresses(a);
-                saveAddresses(a);
-              }}
-            />
+            <AddressesPanel addresses={addresses} setAddresses={setAddresses} userId={user.id} />
           )}
 
-          {activeNav === 'profile' && <ProfilePanel user={user} />}
+          {activeNav === 'profile' && <ProfilePanel user={displayUser} />}
 
           {activeNav === 'notifications' && (
-            <EmptyPanel title="Notifications" message="You have no notifications yet." />
-          )}
+  <NotificationsPanel notifications={notifications} onMarkAllRead={markAllRead} />
+)}
 
           {activeNav === 'support' && (
             <EmptyPanel
@@ -424,6 +492,8 @@ function MenuPanel({
   onChangeQty,
   onRemove,
   onCheckout,
+  checkoutNotice,
+  onAddAddress,
 }: {
   cartItems: CartLine[];
   cartTotal: number;
@@ -431,6 +501,8 @@ function MenuPanel({
   onChangeQty: (id: number, delta: number) => void;
   onRemove: (id: number) => void;
   onCheckout: () => void;
+  checkoutNotice: string | null;
+  onAddAddress: () => void;
 }) {
   return (
     <>
@@ -441,6 +513,7 @@ function MenuPanel({
           <p>Pick what you want — it&apos;ll show up in your cart below.</p>
         </div>
       </div>
+      
 
       <div className="dash-menu-grid">
         {dishes.map((d) => (
@@ -487,15 +560,25 @@ function MenuPanel({
           </div>
 
           <div className="dash-cart-total">
-            <span>Total</span>
-            <strong>{formatNaira(cartTotal)}</strong>
-          </div>
+  <span>Total</span>
+  <strong>{formatNaira(cartTotal)}</strong>
+</div>
 
-          <button className="btn btn-primary btn-full" onClick={onCheckout}>
-            Checkout
-          </button>
+{checkoutNotice && (
+  <div className="dash-checkout-notice">
+    <p>{checkoutNotice}</p>
+    <button className="btn btn-outline btn-sm" onClick={onAddAddress}>
+      Add address
+    </button>
+  </div>
+)}
+
+<button className="btn btn-primary btn-full" onClick={onCheckout}>
+  Checkout
+</button>
         </>
       )}
+      
     </>
   );
 }
@@ -645,9 +728,11 @@ function OrderCard({ order, onTrack }: { order: Order; onTrack: (id: string) => 
 function AddressesPanel({
   addresses,
   setAddresses,
+  userId,
 }: {
   addresses: Address[];
-  setAddresses: (a: Address[]) => void;
+  setAddresses: React.Dispatch<React.SetStateAction<Address[]>>;
+  userId: string;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -680,30 +765,37 @@ function AddressesPanel({
     setShowForm(true);
   }
 
-  function handleDelete(id: string) {
-    setAddresses(addresses.filter((a) => a.id !== id));
+  async function handleDelete(id: string) {
+    try {
+      await deleteAddress(id);
+      setAddresses(addresses.filter((a) => a.id !== id));
+    } catch (err) {
+      console.error('Failed to delete address', err);
+    }
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.fullName || !form.phone || !form.addressLine || !form.city || !form.state) return;
 
-    let next: Address[];
-    if (editingId) {
-      next = addresses.map((a) => (a.id === editingId ? { ...form, id: editingId } : a));
-    } else {
-      const newAddr: Address = { ...form, id: `addr-${Date.now()}` };
-      next = [...addresses, newAddr];
+    try {
+      let saved: Address;
+      if (editingId) {
+        saved = await updateAddress(editingId, form);
+        setAddresses((prev) => prev.map((a) => (a.id === editingId ? saved : a)));
+      } else {
+        saved = await createAddress(userId, form);
+        setAddresses((prev) => [...prev, saved]);
+      }
+      if (form.isDefault) {
+        await setDefaultAddress(userId, saved.id);
+        setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === saved.id })));
+      }
+      setShowForm(false);
+      resetForm();
+    } catch (err) {
+      console.error('Failed to save address', err);
     }
-
-    if (form.isDefault) {
-      const defaultId = editingId ?? next[next.length - 1].id;
-      next = next.map((a) => ({ ...a, isDefault: a.id === defaultId }));
-    }
-
-    setAddresses(next);
-    setShowForm(false);
-    resetForm();
   }
 
   return (

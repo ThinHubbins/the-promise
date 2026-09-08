@@ -1,4 +1,7 @@
+"use client"
 import Link from 'next/link';
+import Image from 'next/image';
+import logo from '../public/logo.jpg';
 
 export default function Footer() {
   return (
@@ -6,7 +9,9 @@ export default function Footer() {
       <div className="wrap footer-grid">
         <div className="footer-brand">
           <Link href="/" className="brand">
-            <span className="brand-mark">P</span>
+            <span className="brand-mark">
+              <Image src={logo} alt="The Promise logo" width={40} height={40} />
+            </span>
             <span>THE PROMISE</span>
           </Link>
           <p>Nigerian fast food and catering group, running kitchens across Rivers, Lagos and Bayelsa States since 2002.</p>
@@ -37,7 +42,7 @@ export default function Footer() {
           <ul>
             <li><Link href="/">Home</Link></li>
             <li><Link href="/#menu">Menu</Link></li>
-            <li><Link href="/#categories">Categories</Link></li>
+            <li><Link href="/feedbacks">Feedbacks</Link></li>
             <li><Link href="/#catering">Catering</Link></li>
           </ul>
         </div>
@@ -72,7 +77,6 @@ export default function Footer() {
             <li><a href="#">Franchising</a></li>
             <li><a href="#">Careers</a></li>
             <li><a href="#">Outlet locations</a></li>
-            <li><a href="#">Feedback</a></li>
           </ul>
         </div>
       </div>
@@ -81,6 +85,77 @@ export default function Footer() {
         <span>&copy; {new Date().getFullYear()} The Promise Nigeria. All rights reserved.</span>
         <span>Concept redesign inspired by The Promise, Nigeria &mdash; demo build, not the official ordering platform.</span>
       </div>
+
+      <style jsx>{`
+        .brand-mark {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          overflow: hidden;
+          width: 40px;
+          height: 40px;
+          flex-shrink: 0;
+        }
+
+        .brand-mark :global(img) {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .footer-contact-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+        }
+
+        .footer-contact-item :global(.icon) {
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+
+        @media (max-width: 860px) {
+          .footer-grid {
+            grid-template-columns: 1fr;
+            gap: 32px;
+            text-align: left;
+            padding-top: 40px;
+            padding-bottom: 32px;
+          }
+
+          .footer-brand {
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          }
+
+          .footer-brand p {
+            max-width: 46ch;
+          }
+
+          .footer-col h4 {
+            margin-bottom: 12px;
+          }
+
+          .footer-col ul {
+            display: grid;
+            gap: 10px;
+          }
+
+          .social-row {
+            margin-top: 16px;
+          }
+
+          .footer-bottom {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+            text-align: left;
+            padding-top: 20px;
+            padding-bottom: 24px;
+          }
+        }
+      `}</style>
     </footer>
   );
 }
