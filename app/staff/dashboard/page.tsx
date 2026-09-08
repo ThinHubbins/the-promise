@@ -1,20 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   getCurrentAuthUser,
   getStaffByEmail,
   staffSignOut,
 } from "../../../lib/staffAuth";
-import type { Staff } from "../../../lib/types";
+import { fetchAttendanceForStaff, subscribeToAttendance } from "../../../lib/attendance";
+import type { Staff, AttendanceRecord } from "../../../lib/types";
 import Link from "next/link";
+
+function formatDuration(clockIn: string, clockOut: string | null) {
+  const start = new Date(clockIn).getTime();
+  const end = clockOut ? new Date(clockOut).getTime() : Date.now();
+  const mins = Math.max(0, Math.round((end - start) / 60000));
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
 
 export default function StaffDashboardPage() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
   const [staff, setStaff] = useState<Staff | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // --- Attendance state ---
+  const [history, setHistory] = useState<AttendanceRecord[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -40,6 +54,34 @@ export default function StaffDashboardPage() {
     })();
   }, [router]);
 
+  const loadHistory = useCallback(async (staffId: string) => {
+    setHistoryLoading(true);
+    try {
+      setHistory(await fetchAttendanceForStaff(staffId));
+    } catch (err) {
+      console.error("Failed to load attendance history", err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  // Initial history load once we know who the staff member is
+  useEffect(() => {
+    if (staff) loadHistory(staff.id);
+  }, [staff, loadHistory]);
+
+  // Live sync: refetch this staff member's history the instant their attendance row changes
+  // (e.g. right after they scan the QR on /staff/scan-attendance).
+  useEffect(() => {
+    if (!staff) return;
+    const unsubscribe = subscribeToAttendance((changedStaffId) => {
+      if (changedStaffId === staff.id) {
+        loadHistory(staff.id);
+      }
+    });
+    return unsubscribe;
+  }, [staff, loadHistory]);
+
   async function handleSignOut() {
     await staffSignOut();
     router.replace("/staff/login");
@@ -64,6 +106,9 @@ export default function StaffDashboardPage() {
       </main>
     );
   }
+
+  const openSession = history.find((r) => r.clock_out === null) ?? null;
+  const isClockedIn = !!openSession;
 
   return (
     <main>
@@ -131,9 +176,58 @@ export default function StaffDashboardPage() {
                     </span>
                   </td>
                 </tr>
+                <tr>
+                  <th>Attendance</th>
+                  <td>
+                    <span
+                      className={`status-badge ${isClockedIn ? "status-active" : "status-inactive"}`}
+                    >
+                      {isClockedIn ? "Clocked In" : "Clocked Out"}
+                    </span>
+                    {isClockedIn && openSession && (
+                      <span style={{ marginLeft: "0.75rem", opacity: 0.75 }}>
+                        since {new Date(openSession.clock_in).toLocaleTimeString()}
+                      </span>
+                    )}
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
+        </div>
+
+        <div className="admin-card">
+          <h3>Attendance History</h3>
+          {historyLoading && <p>Loading history…</p>}
+          {!historyLoading && history.length === 0 && (
+            <p>No attendance records yet.</p>
+          )}
+          {!historyLoading && history.length > 0 && (
+            <div className="admin-table-wrap">
+              <table className="attendance-history-table">
+                <thead>
+                  <tr>
+                    <th>Clock In</th>
+                    <th>Clock Out</th>
+                    <th>Duration</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((rec) => (
+                    <tr key={rec.id}>
+                      <td>{new Date(rec.clock_in).toLocaleString()}</td>
+                      <td>
+                        {rec.clock_out
+                          ? new Date(rec.clock_out).toLocaleString()
+                          : "— still clocked in —"}
+                      </td>
+                      <td>{formatDuration(rec.clock_in, rec.clock_out)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </main>

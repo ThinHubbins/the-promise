@@ -121,3 +121,13 @@ export interface User {
   name: string;
   phone: string;
 }
+
+export type AttendanceRecord = {
+  id: string;
+  staff_id: string;
+  outlet_id: string;
+  clock_in: string; // ISO string
+  clock_out: string | null;
+};
+
+export type OpenAttendanceWithStaff = AttendanceRecord & { staff: Staff };

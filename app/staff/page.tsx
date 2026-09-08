@@ -1,17 +1,31 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser, checkIsAdmin, adminSignOut } from "../../lib/admin";
 import { fetchStaff, setStaffStatus } from "../../lib/staff";
-import type { Staff } from "../../lib/types";
+import {
+  fetchOpenAttendance,
+  fetchAttendanceForStaff,
+  subscribeToAttendance,
+} from "../../lib/attendance";
+import type { Staff, AttendanceRecord } from "../../lib/types";
 import StaffFormModal from "../../components/admin/StaffformModal";
 
 type ModalState =
   | { mode: "add"; staff: null }
   | { mode: "edit" | "view"; staff: Staff }
   | null;
+
+function formatDuration(clockIn: string, clockOut: string | null) {
+  const start = new Date(clockIn).getTime();
+  const end = clockOut ? new Date(clockOut).getTime() : Date.now();
+  const mins = Math.max(0, Math.round((end - start) / 60000));
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
 
 export default function AdminStaffPage() {
   const router = useRouter();
@@ -26,6 +40,12 @@ export default function AdminStaffPage() {
 
   const [modal, setModal] = useState<ModalState>(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+
+  // --- Attendance state ---
+  const [clockedInIds, setClockedInIds] = useState<Set<string>>(new Set());
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [historyByStaff, setHistoryByStaff] = useState<Record<string, AttendanceRecord[]>>({});
+  const [historyLoadingId, setHistoryLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -57,10 +77,46 @@ export default function AdminStaffPage() {
     }
   }
 
+  const loadClockedIn = useCallback(async () => {
+    try {
+      const open = await fetchOpenAttendance();
+      setClockedInIds(new Set(open.map((r) => r.staff_id)));
+    } catch (err) {
+      console.error("Failed to load clock-in status", err);
+    }
+  }, []);
+
+  // Refresh an expanded staff member's history (used by the realtime callback too)
+  const refreshHistory = useCallback(async (staffId: string) => {
+    setHistoryLoadingId(staffId);
+    try {
+      const records = await fetchAttendanceForStaff(staffId);
+      setHistoryByStaff((prev) => ({ ...prev, [staffId]: records }));
+    } catch (err) {
+      console.error("Failed to load attendance history", err);
+    } finally {
+      setHistoryLoadingId((prev) => (prev === staffId ? null : prev));
+    }
+  }, []);
+
   useEffect(() => {
-    if (!checkingAuth) loadStaff();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checkingAuth]);
+    if (checkingAuth) return;
+    loadStaff();
+    loadClockedIn();
+  }, [checkingAuth]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Live sync: any insert/update on attendance refreshes the clocked-in set,
+  // and if that staff member's row is currently expanded, refreshes their history too.
+  useEffect(() => {
+    if (checkingAuth) return;
+    const unsubscribe = subscribeToAttendance((staffId) => {
+      loadClockedIn();
+      if (staffId && staffId === expandedId) {
+        refreshHistory(staffId);
+      }
+    });
+    return unsubscribe;
+  }, [checkingAuth, expandedId, loadClockedIn, refreshHistory]);
 
   const filteredStaff = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -100,6 +156,14 @@ export default function AdminStaffPage() {
       alert("Could not update status. Please try again.");
     } finally {
       setStatusUpdatingId(null);
+    }
+  }
+
+  function handleToggleExpand(staff: Staff) {
+    const next = expandedId === staff.id ? null : staff.id;
+    setExpandedId(next);
+    if (next && !historyByStaff[staff.id]) {
+      refreshHistory(staff.id);
     }
   }
 
@@ -186,57 +250,115 @@ export default function AdminStaffPage() {
                     <th>Department</th>
                     <th>Outlet</th>
                     <th>Status</th>
+                    <th>Attendance</th>
                     <th>Email</th>
                     <th>Actions</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredStaff.map((s) => (
-                    <tr key={s.id}>
-                      <td>{s.full_name}</td>
-                      <td>{s.staff_id}</td>
-                      <td>{s.job_title || "—"}</td>
-                      <td>{s.department || "—"}</td>
-                      <td>{s.outlet || "—"}</td>
-                      <td>
-                        <span
-                          className={`status-badge ${
-                            s.status === "active" ? "status-active" : "status-inactive"
-                          }`}
+                  {filteredStaff.map((s) => {
+                    const isClockedIn = clockedInIds.has(s.id);
+                    const isExpanded = expandedId === s.id;
+                    const history = historyByStaff[s.id];
+                    const historyLoading = historyLoadingId === s.id;
+
+                      return (
+                      <Fragment key={s.id}>
+                        <tr
+                          onClick={() => handleToggleExpand(s)}
+                          style={{ cursor: "pointer" }}
                         >
-                          {s.status}
-                        </span>
-                      </td>
-                      <td>{s.email}</td>
-                      <td>
-                        <div className="admin-row-actions">
-                          <button
-                            className="btn btn-outline btn-sm"
-                            onClick={() => setModal({ mode: "view", staff: s })}
-                          >
-                            View
-                          </button>
-                          <button
-                            className="btn btn-outline btn-sm"
-                            onClick={() => setModal({ mode: "edit", staff: s })}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="btn btn-outline btn-sm"
-                            onClick={() => handleToggleStatus(s)}
-                            disabled={statusUpdatingId === s.id}
-                          >
-                            {statusUpdatingId === s.id
-                              ? "Updating…"
-                              : s.status === "active"
-                                ? "Deactivate"
-                                : "Activate"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                          <td>{s.full_name}</td>
+                          <td>{s.staff_id}</td>
+                          <td>{s.job_title || "—"}</td>
+                          <td>{s.department || "—"}</td>
+                          <td>{s.outlet || "—"}</td>
+                          <td>
+                            <span
+                              className={`status-badge ${
+                                s.status === "active" ? "status-active" : "status-inactive"
+                              }`}
+                            >
+                              {s.status}
+                            </span>
+                          </td>
+                          <td>
+                            <span
+                              className={`status-badge ${
+                                isClockedIn ? "status-active" : "status-inactive"
+                              }`}
+                            >
+                              {isClockedIn ? "Clocked In" : "Clocked Out"}
+                            </span>
+                          </td>
+                          <td>{s.email}</td>
+                          <td onClick={(e) => e.stopPropagation()}>
+                            <div className="admin-row-actions">
+                              <button
+                                className="btn btn-outline btn-sm"
+                                onClick={() => setModal({ mode: "view", staff: s })}
+                              >
+                                View
+                              </button>
+                              <button
+                                className="btn btn-outline btn-sm"
+                                onClick={() => setModal({ mode: "edit", staff: s })}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="btn btn-outline btn-sm"
+                                onClick={() => handleToggleStatus(s)}
+                                disabled={statusUpdatingId === s.id}
+                              >
+                                {statusUpdatingId === s.id
+                                  ? "Updating…"
+                                  : s.status === "active"
+                                    ? "Deactivate"
+                                    : "Activate"}
+                              </button>
+                            </div>
+                          </td>
+                          <td>{isExpanded ? "▲" : "▼"}</td>
+                        </tr>
+                        {isExpanded && (
+                          <tr key={`${s.id}-history`} className="staff-row-expanded">
+                            <td colSpan={10}>
+                              {historyLoading && <p>Loading history…</p>}
+                              {!historyLoading && history?.length === 0 && (
+                                <p>No attendance records yet.</p>
+                              )}
+                              {!historyLoading && history && history.length > 0 && (
+                                <table className="attendance-history-table">
+                                  <thead>
+                                    <tr>
+                                      <th>Clock In</th>
+                                      <th>Clock Out</th>
+                                      <th>Duration</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {history.map((rec) => (
+                                      <tr key={rec.id}>
+                                        <td>{new Date(rec.clock_in).toLocaleString()}</td>
+                                        <td>
+                                          {rec.clock_out
+                                            ? new Date(rec.clock_out).toLocaleString()
+                                            : "— still clocked in —"}
+                                        </td>
+                                        <td>{formatDuration(rec.clock_in, rec.clock_out)}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              )}
+                            </td>
+                          </tr>
+                        )}
+                 </Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
