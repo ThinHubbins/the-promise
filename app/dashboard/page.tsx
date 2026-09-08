@@ -961,7 +961,7 @@ function ProfilePanel({ user }: { user: { name?: string | null; email?: string |
           <input value={user.email ?? ''} disabled />
         </div>
         <p style={{ color: 'var(--ink-soft)', fontSize: '0.82rem' }}>
-          Editing account details isn&apos;t wired up yet — this is a read-only view for now.
+          Welcome to The Promise.
         </p>
       </div>
     </>

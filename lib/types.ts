@@ -31,6 +31,38 @@ export interface Feedback {
   createdAt: string; // ISO string
 }
 
+
+// --- Append the following to your existing lib/types.ts ---
+
+export type StaffStatus = 'active' | 'inactive';
+
+export interface Staff {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  staff_id: string;
+  job_title: string | null;
+  department: string | null;
+  outlet: string | null;
+  status: StaffStatus;
+  created_by: string | null;
+  created_at: string; // ISO string
+  updated_at: string; // ISO string
+}
+
+// Fields the admin fills in when adding/editing a staff member
+export type StaffInput = {
+  full_name: string;
+  email: string;
+  phone: string;
+  staff_id: string;
+  job_title: string;
+  department: string;
+  outlet: string;
+  status: StaffStatus;
+};
+
 interface OrderItem {
   name: string;
   qty: number;

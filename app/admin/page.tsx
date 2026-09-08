@@ -234,6 +234,7 @@ export default function AdminAnalyticsPage() {
           </div>
           <div className="admin-header-actions">
   <Link href="/admin/feedbacks" className="btn btn-outline btn-sm">Customer Reviews</Link>
+  <Link href="/admin/careers" className="btn btn-outline btn-sm">Manage Career</Link>
             <span className={`admin-live-badge${isLive ? " live" : ""}`}>
               <span className="admin-live-dot" />
               {isLive ? "Live" : "Connecting…"}

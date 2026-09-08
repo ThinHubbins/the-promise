@@ -43,7 +43,7 @@ export default function Footer() {
             <li><Link href="/">Home</Link></li>
             <li><Link href="/#menu">Menu</Link></li>
             <li><Link href="/feedbacks">Feedbacks</Link></li>
-            <li><Link href="/#catering">Catering</Link></li>
+            <li><Link href="/stores">Stores</Link></li>
           </ul>
         </div>
 
@@ -75,8 +75,8 @@ export default function Footer() {
           <h4>Company</h4>
           <ul>
             <li><a href="#">Franchising</a></li>
-            <li><a href="#">Careers</a></li>
-            <li><a href="#">Outlet locations</a></li>
+            <li><a href="/careers">Careers</a></li>
+            <li><a href="/stores">Outlet locations</a></li>
           </ul>
         </div>
       </div>
