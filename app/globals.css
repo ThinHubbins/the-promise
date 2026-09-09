@@ -2972,3 +2972,30 @@ footer{background:var(--ink); color:rgba(255,255,255,0.82); padding:64px 0 0;}
     font-size: 0.9rem;
   }
 }
+
+/* ---------- ISO Certifications ---------- */
+.iso-grid{
+  display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-top:8px;
+}
+.iso-card{
+  background:var(--white); border:1px solid var(--line); border-top:4px solid var(--red);
+  border-radius:var(--radius-s); padding:26px 22px;
+  display:flex; flex-direction:column; gap:10px;
+}
+.iso-icon{
+  width:48px; height:48px; border-radius:50%;
+  background:var(--cream); border:1.5px solid var(--line); color:var(--red);
+  display:flex; align-items:center; justify-content:center; margin-bottom:4px;
+}
+.iso-code{
+  font-family:var(--font-head); font-weight:800; font-size:0.95rem; color:var(--red);
+  letter-spacing:0.02em;
+}
+.iso-card h3{font-size:1.02rem; font-weight:700;}
+.iso-card p{color:var(--ink-soft); font-size:0.88rem;}
+
+@media (max-width:980px){.iso-grid{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:560px){
+  .iso-grid{grid-template-columns:1fr;}
+  .section-head{align-items:flex-start;}
+}

@@ -74,17 +74,26 @@ export default function Footer() {
         <div className="footer-col">
           <h4>Company</h4>
           <ul>
-            <li><a href="#">Franchising</a></li>
             <li><a href="/careers">Careers</a></li>
             <li><a href="/stores">Outlet locations</a></li>
           </ul>
         </div>
       </div>
 
-      <div className="wrap footer-bottom">
-        <span>&copy; {new Date().getFullYear()} The Promise Nigeria. All rights reserved.</span>
-        <span>Concept redesign inspired by The Promise, Nigeria &mdash; demo build, not the official ordering platform.</span>
-      </div>
+     <div className="wrap footer-bottom">
+  <span>&copy; {new Date().getFullYear()} The Promise Nigeria. All rights reserved.</span>
+  <span>
+    Website built by{' '}
+    <a
+      href="https://kreytmawr.web.app/"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="!text-white"
+    >
+      Kreyt Mawr
+    </a>
+  </span>
+</div>
 
       <style jsx>{`
         .brand-mark {
