@@ -6,11 +6,11 @@ export default function Hero() {
       <div className="wrap hero-grid">
         <div>
           <span className="badge">
-            <span className="dot"></span>Serving Rivers, Lagos &amp; Bayelsa since 2002
+            <span className="dot"></span>Serving Rivers, Lagos &amp; Bayelsa since 2000
           </span>
           <h1>Nigerian food made the same way, every outlet, every time.</h1>
           <p className="hero-sub">
-            The Promise has run kitchens across the South-South, South East and South West since 2002 —
+            The Promise has run kitchens across the South-South, South East and South West since 2000 —
             same house recipes, same standards, from jollof rice and shawarma to full-scale event catering.
           </p>
           <div className="hero-actions">
@@ -23,7 +23,7 @@ export default function Hero() {
             <Link href="/#categories" className="btn btn-outline">Browse the menu</Link>
           </div>
           <div className="hero-stats">
-            <div><strong>2002</strong><span>Year founded</span></div>
+            <div><strong>2000</strong><span>Year founded</span></div>
             <div><strong>28+</strong><span>Outlets running</span></div>
             <div><strong>3</strong><span>States served</span></div>
           </div>

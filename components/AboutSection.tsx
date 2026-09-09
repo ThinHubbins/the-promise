@@ -3,9 +3,9 @@ export default function AboutSection() {
     <section className="about-section" id="catering">
       <div className="wrap about-grid">
         <div>
-          <span className="section-tag">Since 2002</span>
+          <span className="section-tag">Since 2000</span>
           <p className="lead">
-            The Promise opened its first counter on Aggrey Road in Port Harcourt in July 2002. Today the
+            The Promise opened its first counter on Aggrey Road in Port Harcourt in July 2000. Today the
             same kitchen discipline runs across more than two dozen outlets in Rivers, Lagos and Bayelsa States.
           </p>
           <p className="body-text">
@@ -23,7 +23,7 @@ export default function AboutSection() {
                 <path d="M8 3v3M16 3v3M4 9h16M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z" />
               </svg>
             </div>
-            <div><h4>Founded 2002 in Port Harcourt</h4><p>Started on Aggrey Road, now trading in three states.</p></div>
+            <div><h4>Founded 2000 in Port Harcourt</h4><p>Started on Aggrey Road, now trading in three states.</p></div>
           </div>
           <div className="feature-item">
             <div className="feature-icon">

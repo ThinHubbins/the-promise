@@ -14,7 +14,7 @@ export default function Footer() {
             </span>
             <span>THE PROMISE</span>
           </Link>
-          <p>Nigerian fast food and catering group, running kitchens across Rivers, Lagos and Bayelsa States since 2002.</p>
+          <p>Nigerian fast food and catering group, running kitchens across Rivers, Lagos and Bayelsa States since 2000.</p>
           <div className="social-row">
             <a href="#" aria-label="Facebook">
               <svg className="icon" viewBox="0 0 24 24" style={{ width: 16, height: 16 }}>

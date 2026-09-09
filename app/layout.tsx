@@ -9,9 +9,9 @@ import Toast from '../components/Toast';
 import { Fraunces, Inter } from 'next/font/google';
 
 export const metadata: Metadata = {
-  title: 'The Promise — Nigerian Fast Food & Catering, Since 2002',
+  title: 'The Promise — Nigerian Fast Food & Catering, Since 2000',
   description:
-    'The Promise — Nigerian fast food restaurant and catering group, serving Rivers, Lagos and Bayelsa States since 2002.',
+    'The Promise — Nigerian fast food restaurant and catering group, serving Rivers, Lagos and Bayelsa States since 2000.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
