@@ -12,11 +12,20 @@ const DASHBOARD_ORDERS_HREF = '/dashboard';
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { createClient } from '../../lib/supabase/client'; // adjust path if your browser client lives elsewhere
+import { useCart } from '../../context/CartContext';
 
 type ChatMessage = {
   role: 'user' | 'assistant';
   content: string;
+};
+
+type AssistantAction = {
+  type: 'add_to_cart';
+  dishId: string;
+  name: string;
+  qty: number;
 };
 
 const STARTER_QUESTIONS = [
@@ -37,7 +46,10 @@ export default function PromiseAssistant() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [justAddedToCart, setJustAddedToCart] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const { addToCart } = useCart();
 
   useEffect(() => {
     const supabase = createClient();
@@ -46,7 +58,22 @@ export default function PromiseAssistant() {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages, loading, open]);
+  }, [messages, loading, open, justAddedToCart]);
+
+  function applyActions(actions: AssistantAction[]) {
+    if (!actions || actions.length === 0) return;
+
+    for (const action of actions) {
+      if (action.type === 'add_to_cart') {
+        const qty = Math.max(1, Math.min(20, action.qty || 1));
+        for (let i = 0; i < qty; i++) {
+          addToCart(action.dishId);
+        }
+      }
+    }
+
+    setJustAddedToCart(true);
+  }
 
   async function sendMessage(text: string) {
     const trimmed = text.trim();
@@ -56,6 +83,7 @@ export default function PromiseAssistant() {
     setMessages(nextMessages);
     setInput('');
     setLoading(true);
+    setJustAddedToCart(false);
 
     try {
       // Only send the last few turns to keep requests small.
@@ -67,6 +95,7 @@ export default function PromiseAssistant() {
       });
       const data = await res.json();
       setMessages((prev) => [...prev, { role: 'assistant', content: data.reply || "Sorry, something went wrong." }]);
+      applyActions(data.actions);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -75,6 +104,11 @@ export default function PromiseAssistant() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function goToCheckout() {
+    setOpen(false);
+    router.push(DASHBOARD_ORDERS_HREF);
   }
 
   return (
@@ -116,6 +150,12 @@ export default function PromiseAssistant() {
               <div className="assistant-bubble assistant-bubble-bot assistant-typing">
                 <span /><span /><span />
               </div>
+            )}
+
+            {justAddedToCart && !loading && (
+              <button type="button" className="assistant-chip" onClick={goToCheckout}>
+                Go to checkout →
+              </button>
             )}
 
             {isLoggedIn === false && messages.length <= 2 && (
