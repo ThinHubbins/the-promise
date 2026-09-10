@@ -20,6 +20,7 @@ function fromRow(row: any): Order {
     courier: row.courier,
     location: row.location,
     eta: row.eta,
+    paymentStatus: row.status,   // add
   };
 }
 
@@ -28,6 +29,7 @@ export async function fetchOrders(): Promise<Order[]> {
   const { data, error } = await supabase
     .from('orders')
     .select('*, order_items(*)')
+    .eq('status', 'paid') // ← added: only show paid orders
     .order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []).map(fromRow);
@@ -53,6 +55,7 @@ export async function createOrder(
       amount: params.amount,
       tracking_id: params.trackingId,
       address_id: params.addressId ?? null,
+      status: 'pending', // ← added
     })
     .select()
     .single();

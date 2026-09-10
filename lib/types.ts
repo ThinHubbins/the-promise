@@ -34,7 +34,7 @@ interface OrderItem {
   price: number;
 }
 
-export interface Order {
+export type Order = {
   dbId: string;
   id: string;
   items: { name: string; qty: number; price: number }[];
@@ -45,7 +45,8 @@ export interface Order {
   courier: string;
   location: string;
   eta: string;
-}
+  paymentStatus: 'pending' | 'paid' | 'payment_failed';  // add
+};
 
 export interface Address {
   id: string;

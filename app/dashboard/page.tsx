@@ -191,6 +191,7 @@ function goToNav(key: NavKey) {
 
   setCheckoutNotice(null);
   try {
+    // 1. Create the order — it lands as "pending" payment, nothing charged yet.
     const newOrder = await createOrder(user.id, {
       orderCode: makeOrderId(),
       amount: cartTotal,
@@ -203,12 +204,28 @@ function goToNav(key: NavKey) {
         qty: ci.qty,
       })),
     });
-    setOrders((prev) => [newOrder, ...prev]);
-    pushNotification(newOrder.id, `Your order ${newOrder.id} has been placed.`);
-    clearCart();
-    setActiveNav('track');
+
+    // 2. Open an OPay cashier session for that order.
+    const res = await fetch('/api/payments/opay/initiate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId: newOrder.dbId }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error('Payment initiation failed', data);
+      setCheckoutNotice(data.error ?? 'Could not start payment. Please try again.');
+      return;
+    }
+
+    // 3. Hand off to OPay. Don't touch local orders state or clear the cart
+    // yet — do that once payment is actually confirmed, so an abandoned
+    // payment doesn't leave a "successful" order sitting in the dashboard.
+    window.location.href = data.cashierUrl;
   } catch (err) {
     console.error('Checkout failed', err);
+    setCheckoutNotice('Something went wrong starting checkout.');
   }
 }
 
