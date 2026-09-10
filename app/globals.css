@@ -498,6 +498,36 @@ section{padding:76px 0;}
 
 .menu-more{text-align:center; margin-top:36px;}
 
+.dish-view-hint {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--red, #c0392b);
+  margin: 2px 0 8px;
+}
+
+.load-more-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
+}
+
+.load-more-btn {
+  padding: 11px 28px;
+  border-radius: 999px;
+  border: 1.5px solid var(--ink, #1c1c1c);
+  background: transparent;
+  color: var(--ink, #1c1c1c);
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.load-more-btn:hover {
+  background: var(--ink, #1c1c1c);
+  color: #fff;
+}
+
 /* ---------- About / info ---------- */
 .about-section{background:var(--white); border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
 .about-grid{display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:start;}
@@ -1152,6 +1182,11 @@ footer{background:var(--ink); color:rgba(255,255,255,0.82); padding:64px 0 0;}
 }
 
 /* ---------------- Orders list ---------------- */
+.dash-load-more-row {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 32px;
+}
 
 .dash-orders-list {
   display: flex;

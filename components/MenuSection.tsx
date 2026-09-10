@@ -9,6 +9,8 @@ import type { Dish } from "../lib/types";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 
+const PAGE_SIZE = 8;
+
 function formatNaira(n: number): string {
   return "\u20A6" + n.toLocaleString("en-NG");
 }
@@ -17,6 +19,7 @@ export default function MenuSection() {
   const [filter, setFilter] = useState<Filter>("All");
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [loadingDishes, setLoadingDishes] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const { addToCart } = useCart();
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -32,6 +35,11 @@ export default function MenuSection() {
       }
     })();
   }, []);
+
+  // Reset pagination whenever the filter changes
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [filter]);
 
   function goToFilter(key: Filter) {
     setFilter(key);
@@ -55,9 +63,11 @@ export default function MenuSection() {
     router.push(`/dish/${dishId}`);
   }
 
-  const visibleDishes = dishes.filter(
+  const filteredDishes = dishes.filter(
     (d) => filter === "All" || d.cat === filter,
   );
+  const visibleDishes = filteredDishes.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredDishes.length;
 
   return (
     <>
@@ -104,73 +114,89 @@ export default function MenuSection() {
           ) : visibleDishes.length === 0 ? (
             <p className="reviews-empty">No dishes in this category yet.</p>
           ) : (
-            <div className="dish-grid">
-              {visibleDishes.map((d) => (
-                <div
-                  className="dish-card cursor-pointer"
-                  key={d.id}
-                  onClick={() => goToDish(d.id)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      goToDish(d.id);
-                    }
-                  }}
-                >
-                  {/* Dish Image / Icon */}
-                  <div className={`dish-media tone-${d.tone}`}>
-                    {d.tag && <span className="dish-tag">{d.tag}</span>}
+            <>
+              <div className="dish-grid">
+                {visibleDishes.map((d) => (
+                  <div
+                    className="dish-card cursor-pointer"
+                    key={d.id}
+                    onClick={() => goToDish(d.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        goToDish(d.id);
+                      }
+                    }}
+                  >
+                    {/* Dish Image / Icon */}
+                    <div className={`dish-media tone-${d.tone}`}>
+                      {d.tag && <span className="dish-tag">{d.tag}</span>}
 
-                    {d.images && d.images.length > 0 ? (
-                      <img
-                        src={d.images[0]}
-                        alt={d.name}
-                        className="dish-media-img"
-                      />
-                    ) : (
-                      <DishIcon type={d.icon} />
-                    )}
-                  </div>
+                      {d.images && d.images.length > 0 ? (
+                        <img
+                          src={d.images[0]}
+                          alt={d.name}
+                          className="dish-media-img"
+                        />
+                      ) : (
+                        <DishIcon type={d.icon} />
+                      )}
+                    </div>
 
-                  {/* Dish Details */}
-                  <div className="dish-body cursor-pointer">
-                    <span className="dish-cat">{d.cat}</span>
+                    {/* Dish Details */}
+                    <div className="dish-body cursor-pointer">
+                      <span className="dish-cat">{d.cat}</span>
 
-                    <h3>{d.name}</h3>
+                      <h3>{d.name}</h3>
 
-                    <p className="desc">{d.desc}</p>
+                      <p className="desc">{d.desc}</p>
 
-                    <div className="dish-foot">
-                      <span className="dish-price">{formatNaira(d.price)}</span>
+                      <span className="dish-view-hint">View dish</span>
 
-                      <button
-                        type="button"
-                        className="add-btn cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAdd(d.id);
-                        }}
-                      >
-                        <svg
-                          className="icon"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
+                      <div className="dish-foot">
+                        <span className="dish-price">{formatNaira(d.price)}</span>
+
+                        <button
+                          type="button"
+                          className="add-btn cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAdd(d.id);
+                          }}
                         >
-                          <line x1="12" y1="5" x2="12" y2="19" />
-                          <line x1="5" y1="12" x2="19" y2="12" />
-                        </svg>
-                        Add
-                      </button>
+                          <svg
+                            className="icon"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          >
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                          </svg>
+                          Add
+                        </button>
+                      </div>
                     </div>
                   </div>
+                ))}
+              </div>
+
+              {hasMore && (
+                <div className="load-more-row">
+                  <button
+                    type="button"
+                    className="load-more-btn cursor-pointer"
+                    onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                  >
+                    Load more
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </section>

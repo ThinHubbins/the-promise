@@ -519,6 +519,8 @@ function OverviewPanel({
   );
 }
 
+const MENU_PAGE_SIZE = 6;
+
 function MenuPanel({
   dishes,
   cartItems,
@@ -542,18 +544,22 @@ function MenuPanel({
   onAddAddress: () => void;
   isCheckingOut: boolean;
 }) {
+  const [visibleCount, setVisibleCount] = useState(MENU_PAGE_SIZE);
+  const visibleDishes = dishes.slice(0, visibleCount);
+  const hasMore = visibleCount < dishes.length;
+
   return (
     <>
       <div className="section-head">
         <div>
           <span className="section-tag">Order again</span>
           <h2>Menu</h2>
-          <p>Pick what you want — it&apos;ll show up in your cart below.</p>
+          <p>Pick what you want — it&apos;ll show up in your cart below. Scroll down to check out.</p>
         </div>
       </div>
 
       <div className="dash-menu-grid">
-        {dishes.map((d) => (
+        {visibleDishes.map((d) => (
           <div className="dash-menu-card" key={d.id}>
             <div className={`dish-media tone-${d.tone}`}>
               {d.images && d.images.length > 0 ? (
@@ -572,6 +578,18 @@ function MenuPanel({
           </div>
         ))}
       </div>
+
+      {hasMore && (
+        <div className="dash-load-more-row">
+          <button
+            type="button"
+            className="btn btn-outline btn-sm"
+            onClick={() => setVisibleCount((c) => c + MENU_PAGE_SIZE)}
+          >
+            Load more
+          </button>
+        </div>
+      )}
 
       <div className="dash-section-head-row">
         <h3>Your Cart</h3>
