@@ -51,14 +51,16 @@ export default function Header() {
 
   return (
     <header id="siteHeader" className={scrolled ? 'scrolled' : ''}>
+      <div className="brand-stripe" aria-hidden="true" />
+
       <div className="wrap nav-row">
         <Link href="/" className="brand" onClick={closeNav}>
-          <span className="brand-mark">
-            <Image src={logo} alt="The Promise logo" width={40} height={40} priority />
+          <span className="brand-badge">
+            <Image src={logo} alt="The Promise logo" width={46} height={46} priority />
           </span>
-          <span>
-            THE PROMISE
-            <small>NIGERIAN FAST FOOD &amp; CATERING</small>
+          <span className="brand-word">
+            <span className="brand-name">The Promise</span>
+            <span className="brand-tagline">Nigerian Fast Food &amp; Catering</span>
           </span>
         </Link>
 
@@ -73,12 +75,17 @@ export default function Header() {
             </Link>
           )}
 
-          
+          <a href="tel:+2348129125100" className="mobile-nav-phone" onClick={closeNav}>
+            <svg className="icon" viewBox="0 0 24 24">
+              <path d="M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.3 1.2.4 2.5.6 3.8.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.5 21 3 13.5 3 4.7 3 4.1 3.4 3.7 4 3.7h3.5c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.3 1.1L6.6 10.8Z" />
+            </svg>
+            +234 812 912 5100
+          </a>
         </nav>
 
         {navOpen && <button className="nav-backdrop" aria-hidden="true" onClick={closeNav} />}
 
-        <div className="nav-actions">
+                <div className="nav-actions">
           <span className="nav-phone">
             <svg className="icon" viewBox="0 0 24 24">
               <path d="M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.3 1.2.4 2.5.6 3.8.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.5 21 3 13.5 3 4.7 3 4.1 3.4 3.7 4 3.7h3.5c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.3 1.1L6.6 10.8Z" />
@@ -88,17 +95,19 @@ export default function Header() {
 
           {!isBackofficeRoute && (
             !loading && user ? (
-              <Link href="/dashboard" className="cart-btn" aria-label="Open your order" onClick={closeNav}>
-                <svg className="icon" viewBox="0 0 24 24">
-                  <path d="M4 6h2l1.6 9.6a2 2 0 0 0 2 1.7h7.3a2 2 0 0 0 2-1.6L20 8H7" />
-                  <circle cx="10" cy="20" r="1.3" />
-                  <circle cx="17" cy="20" r="1.3" />
-                </svg>
+              <Link href="/dashboard" className="cart-btn cart-btn-fill" aria-label="Open your order" onClick={closeNav}>
+                <span className="cart-icon-wrap">
+                  <svg className="icon" viewBox="0 0 24 24">
+                    <path d="M4 6h2l1.6 9.6a2 2 0 0 0 2 1.7h7.3a2 2 0 0 0 2-1.6L20 8H7" />
+                    <circle cx="10" cy="20" r="1.3" />
+                    <circle cx="17" cy="20" r="1.3" />
+                  </svg>
+                  {count > 0 && <span className="cart-count">{count}</span>}
+                </span>
                 <span className="cart-btn-label">Your Order</span>
-                <span className="cart-count">{count}</span>
               </Link>
             ) : (
-              <Link href="/login" className="cart-btn" aria-label="Log in to place an order" onClick={closeNav}>
+              <Link href="/login" className="cart-btn cart-btn-outline" aria-label="Log in to place an order" onClick={closeNav}>
                 <svg className="icon" viewBox="0 0 24 24">
                   <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
                   <path d="M10 17l5-5-5-5" />
@@ -135,200 +144,375 @@ export default function Header() {
 
       <style jsx>{`
         header {
-          position: sticky;
-          top: 0;
-          z-index: 60;
-          background: #fff;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-          transition: box-shadow 0.2s ease, border-color 0.2s ease;
-        }
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: #fff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
 
-        header.scrolled {
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-        }
+header.scrolled {
+  box-shadow: 0 4px 20px rgba(36, 23, 18, 0.08);
+}
 
-        .nav-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 20px;
-          padding: 10px 0;
-        }
+.brand-stripe {
+  height: 4px;
+  background: linear-gradient(90deg, #f6b912 0%, #c31730 55%, #7e0e1f 100%);
+}
 
-        .brand-mark {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-          overflow: hidden;
-          width: 40px;
-          height: 40px;
-          flex-shrink: 0;
-        }
+.wrap.nav-row {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+}
 
-        .brand-mark :global(img) {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
+/* ---------- Brand / logo ---------- */
 
-        .primary-nav {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
 
-        .primary-nav :global(a) {
-          padding: 8px 12px;
-          border-radius: 8px;
-          font-weight: 500;
-          color: inherit;
-          text-decoration: none;
-          transition: background 0.15s ease, color 0.15s ease;
-        }
+.brand-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  padding: 3px;
+  background: linear-gradient(155deg, #c31730 0%, #7e0e1f 100%);
+  box-shadow: 0 6px 16px rgba(126, 14, 31, 0.28);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
 
-        .primary-nav :global(a:hover) {
-          background: rgba(0, 0, 0, 0.04);
-        }
+.brand-badge::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 16px;
+  border: 2px solid #f6b912;
+  pointer-events: none;
+}
 
-        .primary-nav :global(a.active) {
-          color: var(--red, #c0392b);
-          background: rgba(192, 57, 43, 0.08);
-        }
+.brand-badge :global(img) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 11px;
+}
 
-        .mobile-nav-phone {
-          display: none;
-        }
+.brand:hover .brand-badge {
+  transform: translateY(-1px);
+  box-shadow: 0 9px 20px rgba(126, 14, 31, 0.34);
+}
 
-        .nav-backdrop {
-          display: none;
-        }
+.brand-word {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 
-        .cart-btn-label {
-          display: inline;
-        }
+.brand-name {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: -0.005em;
+  color: #241712;
+  line-height: 1;
+}
 
-        .cart-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-        }
+.brand-tagline {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b5c54;
+}
 
-        .cart-count {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          min-width: 18px;
-          height: 18px;
-          padding: 0 4px;
-          border-radius: 999px;
-          background: var(--red, #c0392b);
-          color: #fff;
-          font-size: 0.7rem;
-          font-weight: 700;
-        }
+/* ---------- Primary nav ---------- */
 
-        .menu-toggle {
-          display: none;
-          align-items: center;
-          justify-content: center;
-          width: 38px;
-          height: 38px;
-          border-radius: 8px;
-          border: 1px solid rgba(0, 0, 0, 0.08);
-          background: #fff;
-        }
+.primary-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  justify-content: center;
+}
 
-        .menu-toggle:hover {
-          background: rgba(0, 0, 0, 0.04);
-        }
+.primary-nav :global(a) {
+  position: relative;
+  padding: 8px 4px;
+  margin: 0 14px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #241712;
+  text-decoration: none;
+  transition: color 0.15s ease;
+  white-space: nowrap;
+}
 
-        @media (max-width: 860px) {
-          .nav-row {
-            gap: 12px;
-          }
+.primary-nav :global(a::after) {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 2px;
+  border-radius: 2px;
+  background: #f6b912;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.18s ease;
+}
 
-          .brand small {
-            display: none;
-          }
+.primary-nav :global(a:hover) {
+  color: #c31730;
+}
 
-          .nav-phone {
-            display: none;
-          }
+.primary-nav :global(a:hover::after) {
+  transform: scaleX(1);
+}
 
-          .cart-btn-label {
-            display: none;
-          }
+.primary-nav :global(a.active) {
+  color: #c31730;
+}
 
-          .cart-btn {
-            padding: 8px 10px;
-          }
+.primary-nav :global(a.active::after) {
+  transform: scaleX(1);
+  background: #c31730;
+}
 
-          .nav-actions {
-            gap: 8px;
-          }
+.mobile-nav-phone {
+  display: none;
+}
 
-          .menu-toggle {
-            display: inline-flex;
-          }
+.nav-backdrop {
+  display: none;
+}
 
-          .nav-backdrop {
-            display: block;
-            position: fixed;
-            inset: 0;
-            top: var(--header-height, 64px);
-            background: rgba(0, 0, 0, 0.4);
-            border: none;
-            z-index: 40;
-            padding: 0;
-            margin: 0;
-          }
+/* ---------- Actions ---------- */
 
-          .primary-nav {
-            position: fixed;
-            top: var(--header-height, 64px);
-            left: 0;
-            right: 0;
-            z-index: 50;
-            background: #fff;
-            flex-direction: column;
-            align-items: stretch;
-            gap: 0;
-            padding: 8px 0;
-            max-height: calc(100vh - var(--header-height, 64px));
-            overflow-y: auto;
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
-            transform: translateY(-8px);
-            opacity: 0;
-            pointer-events: none;
-            transition: transform 0.18s ease, opacity 0.18s ease;
-          }
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
 
-          .primary-nav.open {
-            transform: translateY(0);
-            opacity: 1;
-            pointer-events: auto;
-          }
+.nav-phone {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: #241712;
+  white-space: nowrap;
+}
 
-          .primary-nav :global(a) {
-            padding: 14px 20px;
-            border-radius: 0;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-            width: 100%;
-          }
+.nav-phone .icon {
+  width: 15px;
+  height: 15px;
+  stroke: #c31730;
+}
 
-          .primary-nav :global(a.active) {
-            background: rgba(192, 57, 43, 0.06);
-          }
+.cart-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 16px 8px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.86rem;
+  border: 2px solid transparent;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  text-decoration: none;
+}
 
-          .mobile-nav-phone {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--red);
-            font-weight: 600;
-          }
-        }
+.cart-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cart-icon-wrap .icon {
+  width: 19px;
+  height: 19px;
+}
+
+.cart-count {
+  position: absolute;
+  top: -7px;
+  right: -8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: #f6b912;
+  color: #241712;
+  font-size: 0.62rem;
+  font-weight: 800;
+  border: 2px solid #fff;
+}
+
+.cart-btn-fill {
+  background: #c31730;
+  border-color: #c31730;
+  color: #fff;
+}
+
+.cart-btn-fill:hover {
+  background: #7e0e1f;
+  border-color: #7e0e1f;
+  transform: translateY(-1px);
+}
+
+.cart-btn-fill .cart-count {
+  border-color: #fff;
+}
+
+.cart-btn-outline {
+  background: transparent;
+  border-color: #241712;
+  color: #241712;
+  padding: 8px 16px;
+}
+
+.cart-btn-outline:hover {
+  border-color: #c31730;
+  color: #c31730;
+}
+
+.menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fff;
+}
+
+.menu-toggle:hover {
+  border-color: #c31730;
+}
+
+@media (max-width: 860px) {
+  .wrap.nav-row {
+    padding: 10px 16px;
+    gap: 12px;
+  }
+
+  .brand-tagline {
+    display: none;
+  }
+
+  .nav-phone {
+    display: none;
+  }
+
+  .cart-btn-label {
+    display: none;
+  }
+
+  .cart-btn {
+    padding: 8px 10px;
+  }
+
+  .cart-btn-outline {
+    padding: 8px 10px;
+  }
+
+  .nav-actions {
+    gap: 8px;
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+  }
+
+    .nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(36, 23, 18, 0.45);
+    border: none;
+    z-index: 40;
+    padding: 0;
+    margin: 0;
+  }
+
+  .primary-nav {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: #fff;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 8px 0;
+    max-height: 75vh;
+    overflow-y: auto;
+    box-shadow: 0 14px 28px rgba(36, 23, 18, 0.14);
+    transform: translateY(-8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.18s ease, opacity 0.18s ease;
+  }
+
+  .primary-nav.open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .primary-nav :global(a) {
+    margin: 0;
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    width: 100%;
+  }
+
+  .primary-nav :global(a::after) {
+    display: none;
+  }
+
+  .primary-nav :global(a.active) {
+    background: rgba(195, 23, 48, 0.06);
+  }
+
+  .mobile-nav-phone {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 20px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #c31730;
+  }
+
+  .mobile-nav-phone .icon {
+    width: 16px;
+    height: 16px;
+    stroke: #c31730;
+  }
+}
       `}</style>
     </header>
   );
