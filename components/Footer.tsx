@@ -16,24 +16,28 @@ export default function Footer() {
           </Link>
           <p>Nigerian fast food and catering group, running kitchens across Rivers, Lagos and Bayelsa States since 2000.</p>
           <div className="social-row">
-            <a href="#" aria-label="Facebook">
+            <a href="https://www.facebook.com/profile.php?id=61584198337957" target='blank' aria-label="Facebook">
               <svg className="icon" viewBox="0 0 24 24" style={{ width: 16, height: 16 }}>
                 <path d="M14 9h3V6h-3a4 4 0 0 0-4 4v2H8v3h2v6h3v-6h3l1-3h-4v-2a1 1 0 0 1 1-1Z" />
               </svg>
             </a>
-            <a href="#" aria-label="Instagram">
+            <a href="https://www.instagram.com/thepromisefastfoodofficial?stkn=MW1hYnYwandhNjh5cQ==" target='blank' aria-label="Instagram">
               <svg className="icon" viewBox="0 0 24 24" style={{ width: 16, height: 16 }}>
                 <rect x="4" y="4" width="16" height="16" rx="4" />
                 <circle cx="12" cy="12" r="3.4" />
                 <circle cx="16.6" cy="7.4" r="0.6" fill="currentColor" stroke="none" />
               </svg>
             </a>
-            <a href="#" aria-label="X / Twitter">
-              <svg className="icon" viewBox="0 0 24 24" style={{ width: 16, height: 16 }}>
-                <line x1="5" y1="5" x2="19" y2="19" />
-                <line x1="19" y1="5" x2="5" y2="19" />
-              </svg>
-            </a>
+            <a href="https://www.tiktok.com/@thepromisefastfood1" target='blank' aria-label="TikTok">
+  <svg
+    className="icon"
+    viewBox="0 0 24 24"
+    style={{ width: 16, height: 16 }}
+    fill="currentColor"
+  >
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-3.77V2h-3.45v13.11a2.91 2.91 0 1 1-2-2.76V8.84a6.35 6.35 0 1 0 5.45 6.27V8.05a8.2 8.2 0 0 0 4.8 1.55V6.69h-1.03Z" />
+  </svg>
+</a>
           </div>
         </div>
 

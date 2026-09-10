@@ -399,9 +399,9 @@ function NotificationsPanel({
 
           {activeNav === 'support' && (
             <EmptyPanel
-              title="Support"
-              message="Need help with an order? Reach us on +234 812 912 5100 or email support@thepromise.ng."
-            />
+  title="Support"
+  message="Need help with an order? Reach us on 08129125100, 08129125101, 08129125102, 08129125103, 08129125105 or 08129125109, or email support@thepromise.ng."
+/>
           )}
         </section>
       </div>

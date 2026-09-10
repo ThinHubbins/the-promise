@@ -14,7 +14,7 @@ import type { AssistantMessage, AssistantRequestBody } from '../../../lib/assist
 // Keep this small — it's a support widget, not a research agent.
 const MAX_HISTORY_MESSAGES = 8; // ~4 back-and-forth turns
 const MAX_MESSAGE_LENGTH = 800;
-const STORE_HREF = '/store';
+const STORE_HREF = 'store';
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 // ^ Verify the current model id in Google AI Studio / the Gemini API docs —
 //   model names change over time. gemini-2.5-flash is a good lightweight default.
@@ -165,7 +165,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('Promise Assistant route error:', err);
     return NextResponse.json(
-      { reply: "Something went wrong on my end. Please try again, or contact The Promise directly." },
+      { reply: "Something went wrong on my end. Please try again, or contact customer service +234 803 722 9044." },
       { status: 200 }
     );
   }
